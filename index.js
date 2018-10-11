@@ -199,6 +199,10 @@ const handlers =
         }
         };
 
+
+
+
+        
         console.log('Attempting to add report', dynamoParams);
 
         // query DynamoDB to see if the item exists first
