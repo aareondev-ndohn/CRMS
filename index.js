@@ -317,14 +317,4 @@ exports.handler = function handler(event, context){
     ask.APP_ID = appId;
     ask.registerHandlers(handlers);
     ask.execute();
-}; 
-
-
-/**
- * 
- * 
- * 
- * 
- * 
- * 
- */
+};
