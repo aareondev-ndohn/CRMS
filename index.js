@@ -30,7 +30,7 @@ const instructions = `Hallo, willkommen in Ihrem CRMS-Portal.
 const handlers = 
 {
 
-    ///Triggered when the user says "Alexa, open Recipe Organizer.
+    ///Triggered when the user says "Alexa, öffne CRMS.
     'LaunchRequest'()
     {
         this.emit(':ask', instructions);
@@ -175,7 +175,7 @@ const handlers =
             const repromptSpeech = 'Wie ist der Zustand des Gegenstandes?';
             return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech);
         }
-    
+TODO:    
         // all slot values received and confirmed, now add the record to DynamoDB
 
 /**     const name = slots.RecipeName.value;
@@ -198,6 +198,10 @@ const handlers =
             UserId: userId
         }
         };
+
+
+
+
 
         console.log('Attempting to add report', dynamoParams);
 
@@ -227,7 +231,6 @@ const handlers =
             console.error(err);
         });
 */
-          
     },
 
     /** Outputs the status of the requested damage report 
@@ -314,4 +317,4 @@ exports.handler = function handler(event, context){
     ask.APP_ID = appId;
     ask.registerHandlers(handlers);
     ask.execute();
-}; 
+};
