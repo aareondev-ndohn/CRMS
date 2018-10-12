@@ -2,7 +2,14 @@ test
 
 hal
 
+<<<<<<< HEAD
 ich kann sachen ins repository laden
 
 
 sdfhjsdhfhjsdf
+=======
+ich kann sachen ins repository 
+
+
+Joachim kann das auch sehen
+>>>>>>> e21736ce117442b81432e56b20484dc284bf0230
