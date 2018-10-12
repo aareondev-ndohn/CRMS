@@ -7,15 +7,13 @@ const askSDKV1Adap = require('ask-sdk-v1adapter');
 const awsSDK = require('aws-sdk');
 const util = require('util');
 const promisify = util.promisify;
-
-/*
 awsSDK.config.update({
   region: "us-east-1" // or whatever region your lambda and dynamo is
   });
-*/
+
 
 const appId = 'amzn1.ask.skill.321b1888-e044-405d-9848-64ebc116c15e';
-const recipesTable = '';
+const crmsTable = 'CRMS-Test1';
 const docClient = new awsSDK.DynamoDB.DocumentClient(); // evtl.: AWS.DynamoDB.DocumentClient();
 
 // convert callback style functions to promises
@@ -175,42 +173,49 @@ const handlers =
             const repromptSpeech = 'Wie ist der Zustand des Gegenstandes?';
             return this.emit(':elicitSlot', slotToElicit, speechOutput, repromptSpeech);
         }
-TODO:    
+
         // all slot values received and confirmed, now add the record to DynamoDB
 
-/**     const name = slots.RecipeName.value;
-        const location = slots.RecipeLocation.value;
-        const isQuick = slots.LongOrQuick.value.toLowerCase() === 'quick';
+        const lastName = slots.Nachname.value;
+        const firstName = slots.Vorname.value;
+        const location = slots.Ort.value;
+        const object = slots.Objekt.value;
+        const state = slots.Zustand.value;
+
+        var dateObj = new Date();
+        var day = dateObj.getUTCDate();
+        var month = dateObj.getUTCMonth()+1;
+        var hour = dateObj.getHours();
+        var minutes = dateObj.getMinutes();
+        var seconds = dateObj.getSecondes();
+        const reportId = month + "" + hour + "" + day + "" + minutes;
+        const reportDate = dateObj;
+
         const dynamoParams = {
-        TableName: recipesTable,
+        TableName: crmsTable,
         Item: {
-            Name: name,
-            UserId: userId,
+            Nachname: lastName,
+            Lastname: firstName,
             Location: location,
-            IsQuick: isQuick
+            Object: object,
+            State: state;
+            ReportID: reportId;
+            ReportDate: reportDate;
         }
         };
 
-        const checkIfRecipeExistsParams = {
-        TableName: recipesTable,
-        Key: {
-            Name: name,
-            UserId: userId
-        }
-        };
-
-
+        
 
 
 
         console.log('Attempting to add report', dynamoParams);
-
+/*
         // query DynamoDB to see if the item exists first
-        dbGet(checkIfRecipeExistsParams)
+        dbGet(checkIfReportIdExistsParams)
         .then(data => {
             console.log('Get item succeeded', data);
 
-            const recipe = data.Item;
+            const report = data.Item;
 
             if (recipe) {
             const errorMsg = `Recipe ${name} already exists!`;
@@ -219,13 +224,13 @@ TODO:
             }
             else {
             // no match, add the recipe
-            return dbPut(dynamoParams);
+            return */ dbPut(dynamoParams); /*
             }
         })
-        .then(data => {
+        .then(data => {*/
             console.log('Add item succeeded', data);
 
-            this.emit(':tell', `Recipe ${name} added!`);
+            this.emit(':tell', `Recipe ${name} added!`);/*
         })
         .catch(err => {
             console.error(err);
@@ -258,12 +263,11 @@ TODO:
 
         const vorname = slots.Vorname.value;
         const dynamoParams = {
-TODO:
-            TableName: XXX,
+
+            TableName: crmsTable,
             Key: 
             {
-                Name: XXX,
-                UserId: XXX
+                Nachname: Nachname,
             }
         };
 TODO:
