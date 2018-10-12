@@ -28,14 +28,16 @@ const dbDelete = promisify(docClient.delete, docClient);
 
 const instructions = `Skill beginnt`;
 
-const writeInDatabaseHandler = 
+
+//const LaunchRequest = 
+const GetDataHandler = 
 {
     canHandle(handlerInput)
     {
         const request = handlerInput.requestEnvelope.request;
 
-        return request.type === 'LaunchRequest'
-        || (request.type === 'IntentRequest' && request.intent.name === 'Speichern');
+        return request.type === 'LaunchRequest' 
+        | (request.type === 'IntentRequest' && request.intent.name === 'GetData');
     },
     handle(handlerInput)
     {
@@ -58,6 +60,45 @@ const writeInDatabaseHandler =
         }
     };
 
+        dataTom = docClient.get(dynamoParams, function(err, data)
+        {
+            if(err)
+            {
+                console.error("Fehlgeschlagen", JSON.stringify(err, null, 2));
+                return handlerInput.responseBuilder
+                .speak('Fail')
+                .getResponse();
+
+            }else
+            {
+                console.log("Successfully read data", JSON.stringify(data, null, 2));
+            }
+        });
+        return handlerInput.responseBuilder
+        .speak(dataTom)
+        .getResponse();
+    }
+}
+
+const writeInDatabaseHandler = 
+{
+    canHandle(handlerInput)
+    {
+        const request = handlerInput.requestEnvelope.request;
+
+        return request.type === 'IntentRequest' && request.intent.name === 'Speichern';
+    },
+    handle(handlerInput)
+    {
+        const name = "Tom";
+
+        const dynamoParams = {
+        TableName: table,
+        Item: {
+            "Name": name,
+        }
+    };
+
         docClient.put(dynamoParams, function(err, data)
         {
             if(err)
@@ -77,6 +118,7 @@ const writeInDatabaseHandler =
         .getResponse();
     }
 };
+
 const HelpHandler = {
     canHandle(handlerInput) {
         const request = handlerInput.requestEnvelope.request;
