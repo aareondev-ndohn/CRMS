@@ -37,7 +37,7 @@ const GetDataHandler =
         const request = handlerInput.requestEnvelope.request;
 
         return request.type === 'LaunchRequest' 
-        | (request.type === 'IntentRequest' && request.intent.name === 'GetData');
+        || (request.type === 'IntentRequest' && request.intent.name === 'Speichern');
     },
     handle(handlerInput)
     {
@@ -54,13 +54,14 @@ const GetDataHandler =
 
         const dynamoParams = {
         TableName: table,
-        Item: {
+        Key: {
             "Name": name,
             "ID": id,
         }
     };
 
-        dataTom = docClient.get(dynamoParams, function(err, data)
+   
+        const dataTom = docClient.get(dynamoParams, function(err, data)
         {
             if(err)
             {
@@ -72,15 +73,23 @@ const GetDataHandler =
             }else
             {
                 console.log("Successfully read data", JSON.stringify(data, null, 2));
+                //return data;
             }
-        });
-        return handlerInput.responseBuilder
-        .speak(dataTom)
-        .getResponse();
-    }
-}
+        })
+        {
+            //return data;
+        };
 
-const writeInDatabaseHandler = 
+        return handlerInput.responseBuilder
+                .speak("worked ")
+                .getResponse();
+
+
+     
+    }
+};
+
+/*const writeInDatabaseHandler = 
 {
     canHandle(handlerInput)
     {
@@ -117,7 +126,7 @@ const writeInDatabaseHandler =
         .speak('Wurde gespeichert')
         .getResponse();
     }
-};
+};*/
 
 const HelpHandler = {
     canHandle(handlerInput) {
@@ -181,10 +190,18 @@ const skillBuilder = askSDK.SkillBuilders.standard();
 
 exports.handler = skillBuilder
   .addRequestHandlers(
-    writeInDatabaseHandler,
+    GetDataHandler,
+    //writeInDatabaseHandler
     HelpHandler,
     ExitHandler,
     SessionEndedRequestHandler
   )
   .addErrorHandlers(ErrorHandler)
   .lambda();
+
+
+
+  /**
+   *        getItem has a parameter "data" which is a data structure containing all information of the response
+   *        + returning "data" should write this structure in whatever var you parse it to
+   */
