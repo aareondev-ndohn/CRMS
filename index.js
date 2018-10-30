@@ -10,13 +10,13 @@ const awsSDK = require('aws-sdk');
 const util = require('util');
 //const promisify = util.promisify;
 awsSDK.config.update({
-  region: "us-east-1" // or whatever region your lambda and dynamo is
-  });
+    region: "us-east-1" // or whatever region your lambda and dynamo is
+});
 
 
 const appId = 'amzn1.ask.skill.77faba7d-b52b-4722-b441-82011b4c9151';
 const table = 'DynamoDB-Test';
-const docClient = new awsSDK.DynamoDB.DocumentClient(); 
+const docClient = new awsSDK.DynamoDB.DocumentClient();
 
 // convert callback style functions to promises
 /*
@@ -30,22 +30,20 @@ const instructions = `Skill beginnt`;
 
 
 //const LaunchRequest = 
-const GetDataHandler = 
+const GetDataHandler =
 {
-    canHandle(handlerInput)
-    {
+    canHandle(handlerInput) {
         const request = handlerInput.requestEnvelope.request;
 
-        return request.type === 'LaunchRequest' 
-        || (request.type === 'IntentRequest' && request.intent.name === 'Speichern');
+        return request.type === 'LaunchRequest'
+            || (request.type === 'IntentRequest' && request.intent.name === 'Speichern');
     },
-    handle(handlerInput)
-    {
+    handle(handlerInput) {
         const name = "Tom";
 
         var dateObj = new Date();
         var day = dateObj.getUTCDate();
-        var month = dateObj.getUTCMonth()+1;
+        var month = dateObj.getUTCMonth() + 1;
         var hour = dateObj.getHours();
         var minutes = dateObj.getMinutes();
         //var seconds = dateObj.getSeconds();
@@ -53,40 +51,74 @@ const GetDataHandler =
         //id = id.toString();
 
         const dynamoParams = {
-        TableName: table,
-        Key: {
-            "Name": name,
-            "ID": id,
-        }
-    };
-
-   
-        const dataTom = docClient.get(dynamoParams, function(err, data)
-        {
-            if(err)
-            {
-                console.error("Fehlgeschlagen", JSON.stringify(err, null, 2));
-                return handlerInput.responseBuilder
-                .speak('Fail')
-                .getResponse();
-
-            }else
-            {
-                console.log("Successfully read data", JSON.stringify(data, null, 2));
-                //return data;
+            TableName: table,
+            Key: {
+                "Name": name,
+                "ID": id,
             }
-        })
-        {
-            //return data;
         };
 
+        var dataTom = docClient.get(dynamoParams, function (err, data) {
+            if (err) {
+                console.error("failed", JSON.stringify(err, null, 2));
+            } else {
+                console.log("Successfully read data", JSON.stringify(data, null, 2));
+                console.log("data.Item.Name: " + data.Item.Name);
+                return data.Item.Name;
+            }
+        });
+
+        var toType = function (obj) {
+            return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+        }
+
+        console.log(toType(dataTom));
+        console.log(dataTom);
+
         return handlerInput.responseBuilder
-                .speak("worked ")
-                .getResponse();
-
-
-     
+            .speak('Worked: ' + dataTom.Item.Name)
+            .getResponse();
     }
+
+    /*
+    docClient.get(dynamoParams, function (err, data) {
+            if (err) {
+                console.error("Fehlgeschlagen", JSON.stringify(err, null, 2));
+                return handlerInput.responseBuilder
+                    .speak('Fail')
+                    .getResponse();
+
+            } else {
+                console.log("Successfully read data", JSON.stringify(data, null, 2));
+                console.log("This is name: " + data.Item.Name);
+                dataTom = data.Item.Name;
+                console.log("this is dataTom: " + dataTom);
+                //return data;
+
+                var toType = function (obj) {
+                    return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+                }
+
+                console.log(toType(dataTom));
+            }
+        });
+
+        console.log("T");
+
+        var toType = function (obj) {
+            return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+        }
+
+        console.log(toType(dataTom));
+
+        var responseVar = "worked" + JSON.stringify(dataTom, null, 2);
+        return handlerInput.responseBuilder
+            .speak(responseVar)
+            .getResponse();
+
+
+
+    }*/
 };
 
 /*const writeInDatabaseHandler = 
@@ -132,13 +164,13 @@ const HelpHandler = {
     canHandle(handlerInput) {
         const request = handlerInput.requestEnvelope.request;
         return request.type === 'IntentRequest'
-        && request.intent.name === 'AMAZON.HelpIntent';
+            && request.intent.name === 'AMAZON.HelpIntent';
     },
     handle(handlerInput) {
         return handlerInput.responseBuilder
-        .speak(HELP_MESSAGE)
-        .reprompt(HELP_REPROMPT)
-        .getResponse();
+            .speak(HELP_MESSAGE)
+            .reprompt(HELP_REPROMPT)
+            .getResponse();
     },
 };
 
@@ -146,13 +178,13 @@ const ExitHandler = {
     canHandle(handlerInput) {
         const request = handlerInput.requestEnvelope.request;
         return request.type === 'IntentRequest'
-        && (request.intent.name === 'AMAZON.CancelIntent'
-            || request.intent.name === 'AMAZON.StopIntent');
+            && (request.intent.name === 'AMAZON.CancelIntent'
+                || request.intent.name === 'AMAZON.StopIntent');
     },
     handle(handlerInput) {
         return handlerInput.responseBuilder
-        .speak(STOP_MESSAGE)
-        .getResponse();
+            .speak(STOP_MESSAGE)
+            .getResponse();
     },
 };
 
@@ -176,9 +208,9 @@ const ErrorHandler = {
         console.log(`Error handled: ${error.message}`);
 
         return handlerInput.responseBuilder
-        .speak('Sorry, an error occurred.')
-        .reprompt('Sorry, an error occurred.')
-        .getResponse();
+            .speak('Sorry, an error occurred.')
+            .reprompt('Sorry, an error occurred.')
+            .getResponse();
     },
 };
 
@@ -189,19 +221,19 @@ const STOP_MESSAGE = 'StopMessage';
 const skillBuilder = askSDK.SkillBuilders.standard();
 
 exports.handler = skillBuilder
-  .addRequestHandlers(
-    GetDataHandler,
-    //writeInDatabaseHandler
-    HelpHandler,
-    ExitHandler,
-    SessionEndedRequestHandler
-  )
-  .addErrorHandlers(ErrorHandler)
-  .lambda();
+    .addRequestHandlers(
+        GetDataHandler,
+        //writeInDatabaseHandler
+        HelpHandler,
+        ExitHandler,
+        SessionEndedRequestHandler
+    )
+    .addErrorHandlers(ErrorHandler)
+    .lambda();
 
 
 
-  /**
-   *        getItem has a parameter "data" which is a data structure containing all information of the response
-   *        + returning "data" should write this structure in whatever var you parse it to
-   */
+/**
+ *        getItem has a parameter "data" which is a data structure containing all information of the response
+ *        + returning "data" should write this structure in whatever var you parse it to
+ */
