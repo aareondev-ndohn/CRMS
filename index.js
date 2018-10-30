@@ -1,11 +1,4 @@
 const askSDK = require('ask-sdk');
-/*
-const askSDKCore = require('ask-sdk-core');
-const askSDKDynamodbAdap = require('ask-sdk-dynamodb-persistence-adapter');
-const askSDKModel = require('ask-sdk-model');
-const askSDKS3Adap = require('ask-sdk-s3-persistence-adapter');
-const askSDKV1Adap = require('ask-sdk-v1adapter');
-*/
 const awsSDK = require('aws-sdk');
 const util = require('util');
 //const promisify = util.promisify;
@@ -14,9 +7,9 @@ awsSDK.config.update({
 });
 
 
-const appId = 'amzn1.ask.skill.77faba7d-b52b-4722-b441-82011b4c9151';
-const table = 'CRMS-Datenbank-Test';
-const docClient = new awsSDK.DynamoDB.DocumentClient();
+const appId = 'amzn1.ask.skill.321b1888-e044-405d-9848-64ebc116c15e';
+//const table = 'CRMS-Datenbank-Test';
+//const docClient = new awsSDK.DynamoDB.DocumentClient();
 
 // convert callback style functions to promises
 /*
@@ -26,26 +19,47 @@ const dbPut = promisify(docClient.put, docClient);
 const dbDelete = promisify(docClient.delete, docClient);
 */
 
-const instructions = `Hallo, willkommen in Ihrem CRMS-Portal. 
-Wollen sie eine Schadensmeldung aufnehmen oder den Status einer Meldung abfragen?`;
-
+const instructions = `Hallo, willkommen in Ihrem CRMS-Portal. Wollen sie eine Schadensmeldung aufnehmen oder den Status einer Meldung abfragen?`;
 
 const LaunchRequestHandler =
 {
     canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+        const requestLaunch = handlerInput.requestEnvelope.request;
+        return requestLaunch.type === 'LaunchRequest';
+    },
+    handle(handlerInput) {
+        return handlerInput.responseBuilder
+            .speak(instructions)
+            .getResponse();
+    }
+};
 
-        return request.type === 'LaunchRequest'
-        || request.type === 'IntentRequest' && request.name === 'WelchesPronomen';
+const WelchesPronomenHandler =
+{
+    canHandle(handlerInput) {
+        const requestPronomen = handlerInput.requestEnvelope.request;
+        console.log("canHandle reached");
+        console.log("request.type: ", requestPronomen.type, "\n request.intent.name: ", requestPronomen.intent.name)
+        return requestPronomen.type === 'IntentRequest'
+            && requestPronomen.intent.name === 'WelchesPronomen';
     },
     handle(handlerInput) {
 
-        const { slots } = this.event.request.intent;
+        console.log("Bis in den handle geschafft.");
+        const requestHandle = handlerInput.requestEnvelope.request;
+        const slots = requestHandle.intent.slots;
+        console.log("Created var slots");
 
-        // Objekt
+        // Pronomen
+        console.log("vardump", JSON.stringify(slots, null, 2));
+        const value = slots.Pronomen.value;
+        console.log("Should now return: ", value, "\n Objekt: ", slots.Objekt.value);
+        return handlerInput.responseBuilder.speak(value).getResponse();
+        /*
         if(!slots.Pronomen.value) {
             const slotToElicit = 'Pronomen';
             const speechOutput = 'Was für ein Pronomen gehört dazu?';
+            console.log("Value of Pronomen is empty");
             return handlerInput.responseBuilder.speak(speechOutput).getResponse();
         }
         else if (slots.Pronomen.confirmationStatus !== 'CONFIRMED') {
@@ -64,11 +78,33 @@ const LaunchRequestHandler =
             return handlerInput.responseBuilder.speak(speechOutput).getResponse();
         }
 
+        // Objekt
+        if(!slots.Objekt.value) {
+            const slotToElicit = 'Objekt';
+            const speechOutput = 'Objekt?';
+            return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+        }
+        else if (slots.Objekt.confirmationStatus !== 'CONFIRMED') {
+            if (slots.Objekt.confirmationStatus !== 'DENIED') {
+                // solt status: unconfirmed
+                const slotToConfirm = 'Objekt';
+                const speechOutput = `Das Pronomen ist ${slots.Pronomen.value}. Ist das richtig?`;
+                const repromtSpeech = speechOutput;
+                return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+            }
+
+            // slot status: denied -> reprompt for slot data
+            const slotToElicit = 'objekt';
+            const speechOutput = 'Wie lautet das Objekt?';
+            const repromtSpeech = 'Bitte geben Sie ein Objekt an';
+            return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+        }
         return handlerInput.responseBuilder
-            .speak(`Das Pronomen ${slots.Pronomen.value} wurde erkannt.`/*instructions*/)
+            .speak(`Das Pronomen ${slots.Pronomen.value} wurde erkannt.`)
             .getResponse();
+        */
     }
-}
+};
 
 /*
 const CreateDamageReport =
@@ -134,7 +170,7 @@ const CreateDamageReport =
 
 
         // location
-        if (!slot.Raum.value) {
+        if (!slots.Raum.value) {
             const slotToElicit = 'Raum';
             const speechOutput = 'An welchem Ort liegt der Schaden vor?';
             const repromptSpeech = 'Bitte gebe den Ort an, an dem sich der Schaden befindet';
@@ -157,7 +193,7 @@ const CreateDamageReport =
         }
 
         //object
-        if (!slot.Objekt.value) {
+        if (!slots.Objekt.value) {
             const slotToElicit = 'Objekt';
             const speechOutput = 'Welches Objekt ist beschädigt?';
             const repromptSpeech = 'Bitte geben Sie den Gegenstand an, der beschädigt ist.';
@@ -180,7 +216,7 @@ const CreateDamageReport =
         }
 
         //state
-        if (!slot.Zustand.value) {
+        if (!slots.Zustand.value) {
             const slotToElicit = 'Zustand';
             const speechOutput = 'In welchem Zustand befindet sich das Objekt?';
             const repromptSpeech = 'Wie ist der Zustand des Gegenstandes?';
@@ -270,14 +306,14 @@ const GetStatusHandler =
         let output;
         
         // prompt for slot data if needed
-        if (!slot.Vorname.value)
+        if (!slots.Vorname.value)
         {
             const slotToElicit = 'Vorname';
             const speechOutput = 'Wie lautet Ihr Vorname?';
             const repromtSpeech = 'Bitte geben Sie Ihren Vornamen an!';
             return handlerInput.responseBuilder.speak(speechOutput).getResponse;
         }
-        else if (!slot.Nachname.value)
+        else if (!slots.Nachname.value)
         {
             const slotToElicit = 'Vorname';
             const speechOutput = 'Wie lautet Ihr Vorname?';
@@ -285,8 +321,8 @@ const GetStatusHandler =
             return handlerInput.responseBuilder.speak(speechOutput).getResponse;
         }
 
-        const firstName = slot.Vorname.value;
-        const lastName = slot.Nachname.value;
+        const firstName = slots.Vorname.value;
+        const lastName = slots.Nachname.value;
 
         const dynamoParams = 
         {
@@ -319,8 +355,7 @@ const GetStatusHandler =
         .speak(reportStatusOutput);
     }
 
-}
-;
+};
 */
 
 /*const writeInDatabaseHandler =
@@ -366,7 +401,9 @@ const GetStatusHandler =
             .speak('Wurde gespeichert')
             .getResponse();
     }
-};*/
+};
+*/
+
 const HelpHandler = {
     canHandle(handlerInput) {
         const request = handlerInput.requestEnvelope.request;
@@ -421,7 +458,7 @@ const ErrorHandler = {
     },
 };
 
-const SKILL_NAME = 'Datenbank';
+const SKILL_NAME = 'CRMS';
 const HELP_MESSAGE = 'HelpMessage';
 const HELP_REPROMPT = 'HelpRepromt';
 const STOP_MESSAGE = 'StopMessage';
@@ -430,10 +467,11 @@ const skillBuilder = askSDK.SkillBuilders.standard();
 exports.handler = skillBuilder
     .addRequestHandlers(
         //writeInDatabaseHandler,
+        LaunchRequestHandler,
         HelpHandler,
         ExitHandler,
         SessionEndedRequestHandler,
-        LaunchRequestHandler,
+        WelchesPronomenHandler,
     )
     .addErrorHandlers(ErrorHandler)
     .lambda();
