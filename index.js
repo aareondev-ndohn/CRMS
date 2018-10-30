@@ -35,9 +35,12 @@ const LaunchRequestHandler =
     canHandle(handlerInput) {
         const request = handlerInput.requestEnvelope.request;
 
-        return request.type === 'Launchrequest';
+        return request.type === 'LaunchRequest'
+        || request.type === 'IntentRequest' && request.name === 'WelchesPronomen';
     },
     handle(handlerInput) {
+
+
         return handlerInput.responseBuilder
             .speak(instructions)
             .getResponse();
@@ -404,7 +407,8 @@ exports.handler = skillBuilder
         writeInDatabaseHandler,
         HelpHandler,
         ExitHandler,
-        SessionEndedRequestHandler
+        SessionEndedRequestHandler,
+        LaunchRequestHandler
     )
     .addErrorHandlers(ErrorHandler)
     .lambda();
