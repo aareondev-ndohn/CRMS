@@ -40,13 +40,37 @@ const LaunchRequestHandler =
     },
     handle(handlerInput) {
 
+        const { slots } = this.event.request.intent;
+
+        // Objekt
+        if(!slots.Pronomen.value) {
+            const slotToElicit = 'Pronomen';
+            const speechOutput = 'Was für ein Pronomen gehört dazu?';
+            return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+        }
+        else if (slots.Pronomen.confirmationStatus !== 'CONFIRMED') {
+            if (slots.Pronomen.confirmationStatus !== 'DENIED') {
+                // solt status: unconfirmed
+                const slotToConfirm = 'Pronomen';
+                const speechOutput = `Das Pronomen ist ${slots.Pronomen.value}. Ist das richtig?`;
+                const repromtSpeech = speechOutput;
+                return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+            }
+
+            // slot status: denied -> reprompt for slot data
+            const slotToElicit = 'Pronomen';
+            const speechOutput = 'Wie lautet das Pronomen?';
+            const repromtSpeech = 'Bitte geben Sie ein Pronomen an';
+            return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+        }
 
         return handlerInput.responseBuilder
-            .speak(instructions)
+            .speak(`Das Pronomen ${slots.Pronomen.value} wurde erkannt.`/*instructions*/)
             .getResponse();
     }
 }
 
+/*
 const CreateDamageReport =
 {
     canHandle(handlerInput) {
@@ -73,7 +97,7 @@ const CreateDamageReport =
             if (slots.Vorname.confirmationStatus !== 'DENIED') {
                 // solt status: unconfirmed
                 const slotToConfirm = 'Vorname';
-                const speechOutput = 'Ihr Vorname lautet ${slots.Vorname.value}. Ist das richtig';
+                const speechOutput = `Ihr Vorname lautet ${slots.Vorname.value}. Ist das richtig`;
                 const repromtSpeech = speechOutput;
                 return handlerInput.responseBuilder.speak(speechOutput).getResponse();
             }
@@ -92,11 +116,11 @@ const CreateDamageReport =
             const repromtSpeech = 'Bitte geben Sie Ihren Nachnamen an'
             return handlerInput.responseBuilder.speak(speechOutput).getResponse();
         }
-        else if (slots.Vorname.confirmationStatus !== 'CONFIRMED') {
-            if (slots.Vorname.confirmationStatus !== 'DENIED') {
+        else if (slots.Nachname.confirmationStatus !== 'CONFIRMED') {
+            if (slots.Nachname.confirmationStatus !== 'DENIED') {
                 // solt status: unconfirmed
                 const slotToConfirm = 'Nachname';
-                const speechOutput = 'Ihr Nachname lautet ${slots.Nachname.value}. Ist das richtig';
+                const speechOutput = `Ihr Nachname lautet ${slots.Nachname.value}. Ist das richtig`;
                 const repromtSpeech = speechOutput;
                 return handlerInput.responseBuilder.speak(speechOutput).getResponse();
             }
@@ -296,7 +320,8 @@ const GetStatusHandler =
     }
 
 }
-    ;
+;
+*/
 
 /*const writeInDatabaseHandler =
 {
@@ -404,11 +429,11 @@ const skillBuilder = askSDK.SkillBuilders.standard();
 
 exports.handler = skillBuilder
     .addRequestHandlers(
-        writeInDatabaseHandler,
+        //writeInDatabaseHandler,
         HelpHandler,
         ExitHandler,
         SessionEndedRequestHandler,
-        LaunchRequestHandler
+        LaunchRequestHandler,
     )
     .addErrorHandlers(ErrorHandler)
     .lambda();
