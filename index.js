@@ -19,7 +19,7 @@ const dbPut = promisify(docClient.put, docClient);
 const dbDelete = promisify(docClient.delete, docClient);
 */
 
-const instructions = `Hallo, willkommen in Ihrem CRMS-Portal. Wollen sie eine Schadensmeldung aufnehmen oder den Status einer Meldung abfragen?`;
+const instructions = "Hallo"//`Hallo, willkommen in Ihrem CRMS-Portal. Wollen sie eine Schadensmeldung aufnehmen oder den Status einer Meldung abfragen?`;
 
 const LaunchRequestHandler =
 {
@@ -34,6 +34,27 @@ const LaunchRequestHandler =
     }
 };
 
+
+const ResponseHandler = 
+{
+    canHandle(handlerInput) {
+        const responsePronomen = handlerInput.requestEnvelope.request;
+        console.log("Handler für User Response erreicht");
+        console.log("request.type: ", requestPronomen.type, "\n request.intent.name: ", requestPronomen.intent.name)
+        return requestPronomen.type === 'IntentRequest'
+        && responsePronomen.intent.name === 'WelchesPronomen'
+        && responsePronomen.dialogState === 'COMPLETED';
+    },
+    handle(handlerInput) {
+        console.log("RESPONSE");
+        const responseHandle = handlerInput.requestEnvelope.request;
+        const slots = responseHandle.intent.slots;
+        console.log("Created var slots");
+        return handlerInput.responseBuilder.speak(`Haha es hat funktioniert ${slots.intent.Pronomen.value}`).getResponse();
+    }
+}
+
+
 const WelchesPronomenHandler =
 {
     canHandle(handlerInput) {
@@ -41,7 +62,8 @@ const WelchesPronomenHandler =
         console.log("canHandle reached");
         console.log("request.type: ", requestPronomen.type, "\n request.intent.name: ", requestPronomen.intent.name)
         return requestPronomen.type === 'IntentRequest'
-            && requestPronomen.intent.name === 'WelchesPronomen';
+            && requestPronomen.intent.name === 'WelchesPronomen'
+            && requestPronomen.dialogState !== 'COMPLETED';
     },
     handle(handlerInput) {
 
@@ -50,11 +72,87 @@ const WelchesPronomenHandler =
         const slots = requestHandle.intent.slots;
         console.log("Created var slots");
 
+        //Pronomen
+        if(!slots.Pronomen.value) {
+            const slotToElicit = 'Pronomen';
+            const speechOutput = 'Was für ein Pronomen gehört dazu?';
+            console.log("Value of Pronomen is empty");
+            return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+        }
+        else if (slots.Pronomen.confirmationStatus !== 'CONFIRMED') {
+            if (slots.Pronomen.confirmationStatus !== 'DENIED') {
+                console.log("Status ist weder confirmed noch denied");
+                // slot status: unconfirmed
+                const slotToConfirm = 'Pronomen';
+                const speechOutput = `Das Pronomen ist ${slots.Pronomen.value}. Ist das richtig?`;
+                const repromtSpeech = speechOutput;
+                return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+            }
+            console.log("Status ist nicht confirmed");
+            /*
+            const attributesManager = handlerInput.attributesManager;
+
+            let sessionAttributes = attributesManager.getSessionAttributes();
+
+            sessionAttributes.canceledSlots = currentIntent.slots;
+
+            attributesManager.setSessionAttributes(sessionAttributes);
+            */
+
+            // slot status: denied -> reprompt for slot data
+            const slotToElicit = 'Pronomen';
+            const speechOutput = 'Wie lautet das Pronomen?';
+            const repromtSpeech = 'Bitte geben Sie ein Pronomen an';
+            return handlerInput.responseBuilder.speak(speechOutput).reprompt(repromtSpeech).getResponse();
+        }
+        console.log("Status ist CONFIRMED")
+        return handlerInput.responseBuilder.speak(`Das Pronomen ${slots.Pronomen.value} wurde erkannt.`).getResponse();
+/*
+        // delegate to Alexa to collect all the required slots
+        const currentIntent = request.intent;
+        if (request.dialogState && request.dialogState !== 'COMPLETED') {
+            return handlerInput.responseBuilder
+                .addDelegateDirective(currentIntent)
+                .getResponse();
+        }
+*/
+        console.log("Pronomen wurde abgearbeitet");
+
+        /*
+        // Objekt
+        if(!slots.Objekt.value) {
+            const slotToElicit = 'Objekt';
+            const speechOutput = 'Objekt?';
+            console.log("Value of Objekt ist empty");
+            return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+        }
+        else if (slots.Objekt.confirmationStatus !== 'CONFIRMED') {
+            if (slots.Objekt.confirmationStatus !== 'DENIED') {
+                // solt status: unconfirmed
+                const slotToConfirm = 'Objekt';
+                const speechOutput = `Das Objekt ist ${slots.Objekt.value}. Ist das richtig?`;
+                const repromtSpeech = speechOutput;
+                return handlerInput.responseBuilder.speak(speechOutput).getResponse();
+            }
+
+            // slot status: denied -> reprompt for slot data
+            const slotToElicit = 'objekt';
+            const speechOutput = 'Wie lautet das Objekt?';
+            const repromtSpeech = 'Bitte geben Sie ein Objekt an';
+            return handlerInput.responseBuilder.speak(speechOutput).reprompt(repromtSpeech).getResponse();
+        }
+        return handlerInput.responseBuilder
+            .speak(`Das Pronomen ${slots.Objekt.value} wurde erkannt.`)
+            .getResponse();
+
+        */
+
         // Pronomen
-        console.log("vardump", JSON.stringify(slots, null, 2));
-        const value = slots.Pronomen.value;
-        console.log("Should now return: ", value, "\n Objekt: ", slots.Objekt.value);
-        return handlerInput.responseBuilder.speak(value).getResponse();
+        //console.log("vardump", JSON.stringify(slots, null, 2));
+        //const value = slots.Pronomen.value;
+        //console.log("Should now return: ", value, "\n Objekt: ", slots.Objekt.value);
+        //return handlerInput.responseBuilder.speak(value).repromt().getResponse();
+        
         /*
         if(!slots.Pronomen.value) {
             const slotToElicit = 'Pronomen';
@@ -440,7 +538,7 @@ const SessionEndedRequestHandler = {
     handle(handlerInput) {
         console.log(`Session ended with reason: ${handlerInput.requestEnvelope.request.reason}`);
 
-        return handlerInput.responseBuilder.getResponse();
+        return handlerInput.responseBuilder.speak("Session wird beendet").getResponse();
     },
 };
 
@@ -472,6 +570,7 @@ exports.handler = skillBuilder
         ExitHandler,
         SessionEndedRequestHandler,
         WelchesPronomenHandler,
+        ResponseHandler,
     )
     .addErrorHandlers(ErrorHandler)
     .lambda();
