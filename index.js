@@ -41,6 +41,82 @@ const GetDataHandler =
             || (request.type === 'IntentRequest' && request.intent.name === 'Speichern');
     },
     handle(handlerInput) {
+
+        var params = 
+        {
+            TableName: table,
+            Key:
+            {
+                'Name': 'Tom',
+                'ID': '12',
+            }
+        };
+
+        return new Promise((resolve, reject) => 
+        {
+            docClient.get(params, function(err,data)
+            {
+                if(err)
+                {
+                    console.log('failed to read data' + JSON.stringify(err,null,2));
+                    reject(err);
+                }
+                else
+                {
+                    console.log('successfully read data: ' + JSON.stringify(data,null,2))
+                    var name = data.Item.Name;
+                    var age = data.Item.ID;
+                    resolve(handlerInput.responseBuilder
+                        .speak("The name is " + name + 'and he is ' + age)
+                        .getResponse());
+                }
+            })
+        });
+        
+        
+        
+        
+        
+    },
+};    
+        
+/*        
+handle(handlerInput) 
+{
+    return new Promise((resolve, reject) => 
+    {
+      handlerInput.attributesManager.getPersistentAttributes()
+        .then((attributes) => 
+        {
+          attributes.foo = 'bar';
+          handlerInput.attributesManager.setPersistentAttributes(attributes);
+
+          return handlerInput.attributesManager.savePersistentAttributes();
+        })
+        .then(() => 
+        {
+          resolve(handlerInput.responseBuilder
+            .speak('Persistent attributes updated!')
+            .getResponse());
+        })
+        .catch((error) => 
+        {
+          reject(error);
+        });
+    });
+  },
+};    
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
         const name = "Tom";
 
         var dateObj = new Date();
@@ -60,7 +136,7 @@ const GetDataHandler =
             }
         };
 
-
+/*
             docClient.get(dynamoParams, function (err, data) {
                 if (err) {
                     console.error("failed", JSON.stringify(err, null, 2));
@@ -68,9 +144,9 @@ const GetDataHandler =
                     console.log("Successfully read data", JSON.stringify(data, null, 2));
                     console.log("data.Item.Name: " + data.Item.Name);
                 }
-            });
+            }).then();
 
-        /*
+        
         let promise = new Promise(function (resolve, reject) {
             docClient.get(dynamoParams, function (err, data) {
                 if (err) {
@@ -98,7 +174,7 @@ const GetDataHandler =
         }
 
         var dataTest = dataBaseCall();
-        */
+        
         //console.log('dataEnd is = '+ dataTest + + JSON.stringify(dataTest,null,2));
         return handlerInput.responseBuilder
         .speak('worked' )//+ dataTest.Item.Name)
@@ -107,7 +183,7 @@ const GetDataHandler =
 
 
     }
-
+*/
 
 
     /*
@@ -149,7 +225,7 @@ const GetDataHandler =
 
 
     }*/
-};
+//};
 
 /*function tuwas(data, handlerInput) {
      console.log("this should be data before return:" + JSON.stringify(data,null,2));   
