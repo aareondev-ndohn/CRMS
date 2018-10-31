@@ -28,6 +28,8 @@ const dbDelete = promisify(docClient.delete, docClient);
 
 const instructions = `Skill beginnt`;
 
+var dataTest;
+
 
 //const LaunchRequest = 
 const GetDataHandler =
@@ -58,27 +60,55 @@ const GetDataHandler =
             }
         };
 
-        var dataTom = docClient.get(dynamoParams, function (err, data) {
-            if (err) {
-                console.error("failed", JSON.stringify(err, null, 2));
-            } else {
-                console.log("Successfully read data", JSON.stringify(data, null, 2));
-                console.log("data.Item.Name: " + data.Item.Name);
-                return data.Item.Name;
-            }
+
+            docClient.get(dynamoParams, function (err, data) {
+                if (err) {
+                    console.error("failed", JSON.stringify(err, null, 2));
+                } else {
+                    console.log("Successfully read data", JSON.stringify(data, null, 2));
+                    console.log("data.Item.Name: " + data.Item.Name);
+                }
+            });
+
+        /*
+        let promise = new Promise(function (resolve, reject) {
+            docClient.get(dynamoParams, function (err, data) {
+                if (err) {
+                    console.error("failed", JSON.stringify(err, null, 2));
+                    reject(err);
+                } else {
+                    console.log("Successfully read data", JSON.stringify(data, null, 2));
+                    console.log("data.Item.Name: " + data.Item.Name);
+                    //tuwas(data, handlerInput);
+                    dataTest = data;
+                    resolve(data);
+                }
+            })
         });
 
-        var toType = function (obj) {
-            return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+
+
+        var dataBaseCall = function () {
+            promise.then(function (fulfilled) {
+                console.log('worked:' +fulfilled.Item.Name);
+            })
+                .catch(function (error) {
+                    console.log(error)
+                });
         }
 
-        console.log(toType(dataTom));
-        console.log(dataTom);
-
+        var dataTest = dataBaseCall();
+        */
+        //console.log('dataEnd is = '+ dataTest + + JSON.stringify(dataTest,null,2));
         return handlerInput.responseBuilder
-            .speak('Worked: ' + dataTom.Item.Name)
-            .getResponse();
+        .speak('worked' )//+ dataTest.Item.Name)
+        .getResponse();
+
+
+
     }
+
+
 
     /*
     docClient.get(dynamoParams, function (err, data) {
@@ -121,6 +151,22 @@ const GetDataHandler =
     }*/
 };
 
+/*function tuwas(data, handlerInput) {
+     console.log("this should be data before return:" + JSON.stringify(data,null,2));   
+       
+     var toType = function (obj) {
+        return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+    }
+
+    console.log(data.Item.Name);
+    //console.log(dataTom);
+
+    return handlerInput.responseBuilder
+        .speak('Worked: name is ' + data.Item.Name)
+        .getResponse();
+}
+
+*/
 /*const writeInDatabaseHandler = 
 {
     canHandle(handlerInput)
