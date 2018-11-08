@@ -6,92 +6,153 @@ awsSDK.config.update(
     }
 );
 
-const reportTable = 'schadensmeldungVorstellung';
+
+const reportTable = '';
 const docClient = new awsSDK.DynamoDB.DocumentClient();
-const backgroundImageUrl = 'https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz.jpg';
+const bgImageUrl = '';
+
+const HELP_MESSAGE = 'Um mehr öber die Funktionen dieses Skills zu erfahren sagen Sie: Info zum Mieter-Portal';
+const HELP_REPROMPT = 'HelpRepromt';
+const STOP_MESSAGE = 'Auf Wiedersehen';
+const skillBuilder = askSDK.SkillBuilders.standard();
+
+const deleteIntentInfo = 'Löschen Info';
+const saveIntentInfo = 'Schadensmeldung aufnehmen Info';
+const getDataIntentInfo = 'Bearbeitungsstatus erfragen Info';
 
 
-const welcomeMessagelong = 'Willkommen in Ihrem Mieter-Portal, Sie können eine Schadensmeldung aufnehmen oder sich nach dem Status erkundigen'
-const welcomeMessage = 'Willkommen in Ihrem Mieter-Portal';
+function supportsDisplay(input) {
+    var hasDisplay =
+        input.requestEnvelope.context &&
+        input.requestEnvelope.context.System &&
+        input.requestEnvelope.context.System.device &&
+        input.requestEnvelope.context.System.device.supportedInterfaces &&
+        input.requestEnvelope.context.System.device.supportedInterfaces.Display
+    return hasDisplay;
+}
 
-const instruct = 'no intructions yet';
+function getDisplay(response, /*attributes,*/ imageUrl, displayType, title, text1, text2, text3) {
+    const image = new askSDK.ImageHelper().addImageInstance(imageUrl).getImage();
 
-const LaunchRequestHandler =
-{
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    const textContent = new askSDK.RichTextContentHelper()
+        .withPrimaryText(text1)
+        .withSecondaryText(text2)
+        .withTertiaryText(text3)
+        .getTextContent();
 
-        return request.type === 'LaunchRequest';
-    },
-    handle(handlerInput) {
-
-        const title = 'Mieter-Portal';
-        const text1 = 'Willkommen in Ihrem Mieter-Portal';
-        const text2 = 'ich bin text2 fett pronomenbaby';
-        const text3 = 'Tipp: "Schadensmeldung aufnehmen..."';
-
-        if (supportsDisplay(handlerInput)) {
-            const displayType = 'BodyTemplate7';
-            const imageUrl = backgroundImageUrl;
-            response = getDisplay(handlerInput.responseBuilder,
-                imageUrl,
-                displayType,
-                title,
-                text1,
-                text2,
-                text3)
-        }
-        else {
-            response = handlerInput.responseBuilder;
-        }
-
-        return response
-            .speak(welcomeMessage)
-            .withShouldEndSession(false)
-            .getResponse();
-
-        /*return handlerInput.responseBuilder
-        .speak(welcomeMessage)
-        .withShouldEndSession(false)
-        .getResponse();*/
+    if (displayType == 'BodyTemplate7') {
+        //use Background image
+        response.addRenderTemplateDirective({
+            type: displayType,
+            backButton: 'visible',
+            backgroundImage: image,
+            title: title,
+            textContent: textContent,
+        });
     }
-};
+    else {
+        response.addRenderTemplateDirective({
+            //use 340x340 image on the right with text on the left
+            backButton: 'visible',
+            image: image,
+            title: title,
+            textContent: textContent,
+        });
+    }
+    console.log('textContent is: ', JSON.stringify(textContent, null, 2));
+    return response;
+}
 
-const SaveDataToDatabaseHandler =
+function idResponseOutput(id) {
+    var output = '';
+
+    for (var i = 0; x < 2; i++) {
+        output = id.charAt(i) + ' ';
+    }
+
+    return output;
+}
+
+const SetDataHandler =
 {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
 
         return request.type === 'IntentRequest'
-            && request.intent.name === 'SaveReport';
+            && request.intent.name === 'SaveReport'
     },
-    handle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
-        const slots = request.intent.slots;
+    handle(input) {
+        const request = input.requestEnvelope.request;
+        const intent = request.intent;
+        const slots = intent.slots;
 
-        var object = slots.object.value;
-        var location = slots.location.value;
-        var state = slots.statevalue;
+        const object = slots.object.value;
+        const location = slots.location.value;
+        const state = slots.state.value;
+        const firstName = slots.firstName.value;
+        const lastName = slots.lastName.value;
+        const missigLocationMessage = 'Um welchen Ort geht es?';
+        const missingObjectMessage = 'Um welchen Gegenstand handelt es sich?';
+        const missingStateMessage = 'Wie ist der Zustand des Objekts?';
+        const elicitFirstNameMsg = 'Wie lautet Ihr Vorname?';
+        const elicitLastNameMsg = 'Wie lautet Ihr Nachname?';
 
         if (request.intent.confirmationStatus === 'DENIED') {
-            console.log('user canceled request with current slot values' + object + ' ' + location + ' ' + state);
-            return handlerInput.responseBuilder
-                .speak('Vorgang abgebrochen')
-                .withShouldEndSession(false)
+            console.log('user cancelled "SaveReport"-intent with current slot values')
+            return input.responseBuilder
+                .speak('Meldung wurde verworfen')
+                .withShouldEndSession(undefined)
                 .getResponse();
         }
         else {
-            if (request.intent.confirmationStatus === 'NONE') {
-                if (object == null || location == null || state == null) {
-                    console.log('send request to fill slots to user')
-                    return handlerInput.responseBuilder
-                        .addDelegateDirective(request.intent)
+            if (request.confirmationStatus === 'NONE') {
+                //maybe add: if (obj, loc, state, name..... == null)
+                if (location == null || location == '?') {
+                    console.log('elicit location slot');
+                    return input.responseBuilder
+                        .speak(missigLocationMessage)
+                        .addElicitSlotDirective('location', intent)
                         .getResponse();
                 }
-                console.log('getting user confirmation')
-                return handlerInput.responseBuilder
-                    .addDelegateDirective(request.intent)
+                else if (object == null || object == '?') {
+                    console.log('elicit object slot');
+                    return input.responseBuilder
+                        .speak(missingObjectMessage)
+                        .addElicitSlotDirective('object', intent)
+                        .getResponse();
+                }
+                else if (state == null || state == '?') {
+                    console.log('elicit state slot');
+                    return input.responseBuilder
+                        .speak(missingStateMessage)
+                        .addElicitSlotDirective('state', intent)
+                        .getResponse();
+                }
+                else if (firstName == null || firstName == '?') {
+                    console.log('elicit first name');
+                    return input.responseBuilder
+                        .speak(elicitFirstNameMsg)
+                        .addElicitSlotDirective('firstName')
+                        .getResponse();
+                }
+                else if (lastName == null || firstName == '?') {
+                    console.log('elicit last name');
+                    return input.responseBuilder
+                        .speak(elicitLastNameMsg)
+                        .getResponse();
+                }
+
+
+                console.log('getting intent confirmation');
+                var speechOutput = 'Möchten Sie die Meldung mit den Daten: Ort '
+                    + location + ', Objekt ' + object + ', Zustand '
+                    + state + ' unter dem Namen ' + firstName + ' '
+                    + lastName + ' aufnehmen?';
+                return input.responseBuilder
+                    .speak(speechOutput)
+                    .addConfirmIntentDirective(intent)
                     .getResponse();
+
             }
 
             var dateObj = new Date();
@@ -132,14 +193,14 @@ const SaveDataToDatabaseHandler =
                     docClient.put(params, function (err, data) {
                         if (err) {
                             console.error('failed to add item to database', JSON.stringify(err, null, 2));
-                            reject(handlerInput.responseBuilder
+                            reject(input.responseBuilder
                                 .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
                                 .withShouldEndSession(false)
                                 .getResponse());
                         }
                         else {
                             console.log('successfully added item to database', JSON.stringify(data, null, 2));
-                            resolve(handlerInput.responseBuilder
+                            resolve(input.responseBuilder
                                 .speak('Die Meldung wurde mit der ID ' + id + ' aufgenommen')
                                 .withShouldEndSession(false)
                                 .getResponse());
@@ -151,26 +212,29 @@ const SaveDataToDatabaseHandler =
     }
 };
 
-const GetDataByIdHandler =
-{
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+GetDataByIdHandler = {
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
 
         return request.type === 'IntentRequest'
             && request.intent.name === 'GetDataById'
     },
-    handle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    handle(input) {
+        const request = input.requestEnvelope.request;
         const slots = request.intent.slots;
 
         var id = slots.id.value;
 
         if (id == null) {
-            return handlerInput.responseBuilder
-                .addDelegateDirective(request.intent)
+            const idMissingOutput = 'Wie lautet die vierstellige ei die?';
+            return input.responseBuilder
+                .speak(idMissingOutput)
+                .repromt(idMissingOutput)
+                .addElicitSlotDirective('id', request.intent)
                 .getResponse();
         }
         else {
+            const idInvalid = 'Ungültige Eingabe, wie lautet die vierstellige ei die?';
             try {
                 idNum = parseInt(id, 10);
                 if (id.charAt(0) === '0') {
@@ -180,16 +244,20 @@ const GetDataByIdHandler =
                 if (idNum < 1000 || id > 9999) {
                     console.log('ID invalid' + id);
                     slots.id.value = null;
-                    return handlerInput.responseBuilder
-                        .addDelegateDirective(request.intent)
+                    return input.responseBuilder
+                        .speak(idInvalid)
+                        .repromt(idMissingOutput)
+                        .addElicitSlotDirective('id', request.intent)
                         .getResponse();
                 }
             }
             catch (err) {
                 console.log('ID invalid' + id + 'parseInt failed')
                 slots.id.value = null;
-                return handlerInput.responseBuilder
-                    .addDelegateDirective(request.intent)
+                return input.responseBuilder
+                    .speak(idInvalid)
+                    .repromt(idMissingOutput)
+                    .addElicitSlotDirective('id', request.intent)
                     .getResponse();
             }
 
@@ -206,7 +274,7 @@ const GetDataByIdHandler =
                 docClient.get(params, function (err, data) {
                     if (err) {
                         console.log('failed to read data' + JSON.stringify(err, null, 2));
-                        reject(handlerInput.responseBuilder
+                        reject(input.responseBuilder
                             .speak('Datenbanzugriff fehlgeschlagen')
                             .withShouldEndSession(false)
                             .getResponse());
@@ -221,7 +289,7 @@ const GetDataByIdHandler =
                         var speechOutput = 'Ihre Schadensmeldung vom ' + date + ' mit der Id '
                             + id + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
                             + object + ', hat den Bearbeitungsstatus ' + sop + '.';
-                        resolve(handlerInput.responseBuilder
+                        resolve(input.responseBuilder
                             .speak(speechOutput)
                             .withShouldEndSession(false)
                             .getResponse());
@@ -234,31 +302,31 @@ const GetDataByIdHandler =
 
 const DeleteDataByIdHandler =
 {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
 
         return request.type === 'IntentRequest'
             && request.intent.name === 'DeleteReportById';
     },
-    handle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
-        const slots = request.intent.slots;
-
-        const id = slots.id.value;
-
+    handle(input) {
+        const request = input.requestEnvelope.request;
+        const id = request.intent.slots.id.value;
 
         if (request.intent.confirmationStatus === 'DENIED') {
-            console.log('Request cancelled by User');
-            return handlerInput.responseBuilder
+            console.log('intent cancelled by user');
+            return input.responseBuilder
                 .speak('Löschvorgang abgebrochen')
                 .getResponse();
         }
         else {
             if (request.intent.confirmationStatus === 'NONE') {
-                if (id == null) {
-                    console.log('send request to user --> value for id-slot');
-                    return handlerInput.responseBuilder
-                        .addDelegateDirective(request.intent)
+                const invalidIdMsg = 'Ungültige Eingabe. Wie lautet die vierstellige ei. die?'
+
+                if (id == null || id == '?') {
+                    console.log('id value invalid --> elicit id slot');
+                    return input.responseBuilder
+                        .speak(invalidIdMsg)
+                        .addElicitSlotDirective('id', request.intent)
                         .getResponse();
                 }
                 else {
@@ -271,162 +339,191 @@ const DeleteDataByIdHandler =
                         if (idNum < 1000 || id > 9999) {
                             console.log('ID invalid' + id);
                             slots.id.value = null;
-                            return handlerInput.responseBuilder
-                                .addDelegateDirective(request.intent)
+                            return input.responseBuilder
+                                .speak(invalidIdMsg)
+                                .addElicitSlotDirective('id', request.intent)
                                 .getResponse();
                         }
                     }
                     catch (err) {
-                        console.log('ID invalid' + id + 'parseInt failed')
-                        slots.id.value = null;
-                        return handlerInput.responseBuilder
-                            .addDelegateDirective(request.intent)
+                        console.error('ID invalid ' + id + ' parseInt failed');
+                        return input.responseBuilder
+                            .speak(invalidIdMsg)
+                            .addElicitSlotDirective('id', request.intent)
                             .getResponse();
                     }
                     console.log('getting user confirmation');
-                    return handlerInput.responseBuilder
-                        .addDelegateDirective(request.intent)
+                    var idOutput = idResponseOutput(id);
+                    const intentConfirmationMsg = 'Sind Sie sicher, dass Sie die Meldung mit der ei. Die. '
+                        + idOutput + ' löschen möchten?';
+                    return input.responseBuilder
+                        .speak(intentConfirmationMsg)
+                        .addConfirmIntentDirective(request.intent)
                         .getResponse();
                 }
-
             }
 
-
-            var params =
-            {
-                TableName: reportTable,
-                Key:
+            try {
+                var params =
                 {
-                    'id': id
+                    TableName: reportTable,
+                    Key:
+                    {
+                        'id': id
+                    }
                 }
-            }
 
-            return new Promise((resolve, reject) => {
-                docClient.delete(params, function (err, data) {
-                    if (err) {
-                        console.log("failed to delete item from database", JSON.stringify(err, null, 2));
-                        reject(handlerInput.responseBuilder
-                            .speak('Beim Löschen der Meldung ist ein Fehler aufgetreten')
-                            .withShouldEndSession(false)
-                            .getResponse());
-                    }
-                    else {
-                        console.log('successfully deleted ' + id + ' from database', JSON.stringify(data, null, 2));
-                        resolve(handlerInput.responseBuilder
-                            .speak('Die Meldung wurde zum Löschen markiert. Sie werden informiert so bald die Meldung endgültig gelöscht wurde.')
-                            .withShouldEndSession(false)
-                            .getResponse());
-                    }
+                return new Promise((resolve, reject) => {
+                    docClient.delete(params, function (err, data) {
+                        if (err) {
+                            console.log("failed to delete item from database", JSON.stringify(err, null, 2));
+                            reject(input.responseBuilder
+                                .speak('Beim Löschen der Meldung ist ein Fehler aufgetreten')
+                                .withShouldEndSession(false)
+                                .getResponse());
+                        }
+                        else {
+                            console.log('successfully deleted ' + id + ' from database', JSON.stringify(data, null, 2));
+                            resolve(input.responseBuilder
+                                .speak('Die Meldung wurde zum Löschen markiert. Sie werden informiert so bald die Meldung endgültig gelöscht wurde.')
+                                .withShouldEndSession(false)
+                                .getResponse());
+                        }
+                    })
                 })
-            })
+            }
+            catch (err) {
+                console.error('caugth exception ' + err + ' failed to delete or access database');
+                return input.responseBuilder
+                    .speak('Beim Zugirff auf die Datenbank ist etwas schiefgelaufen')
+                    .getResponse();
+            }
         }
     }
 };
 
 const IntentInfoHandler =
 {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
 
         return request.type === 'IntentRequest'
             && request.intent.name === 'IntentInfo'
     },
-    handle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    handle(input) {
+        const request = input.requestEnvelope.request;
         const slots = request.intent.slots;
 
-        if (slots.intent.value == null) {
-            console.log('wait for user input regarding intent info')
-            return handlerInput.responseBuilder
-                .addDelegateDirective(request.intent)
-                .getResponse();
-        }
-        else {
-            var intent = slots.intent.value;
+        if (slot.moreInfo != 'no') {
+            if (slots.intent.value == null) {
+                console.log('wait for user input regarding intent info')
+                return input.responseBuilder
+                    .addDelegateDirective(request.intent)
+                    .getResponse();
+            }
+            else {
+                var intent = slots.intent.value;
 
-            if (intent === 'löschen') {
-                console.log('user requested info regarding the delete intent');
-                return handlerInput.responseBuilder
-                    .speak(deleteIntentInfo)
-                    .withShouldEndSession(false)
-                    .getResponse();
+                if (intent === 'löschen') {
+                    console.log('user requested info regarding the delete intent');
+                    return input.responseBuilder
+                        .speak(deleteIntentInfo)
+                        .addElicitSlotDirective('moreInfo', request.intent)
+                        .getResponse();
+                }
+                else if (intent === 'Bearbeitungsstatus') {
+                    console.log('user requested info regarding the getData Intent');
+                    return input.responseBuilder
+                        .speak(getDataIntentInfo)
+                        .addElicitSlotDirective('moreInfo', request.intent)
+                        .getResponse();
+                }
+                else if (intent === 'aufnehmen') {
+                    console.log('user requested info regarding the saveData Intent');
+                    return input.responseBuilder
+                        .speak(saveIntentInfo)
+                        .addElicitSlotDirective('moreInfo', request.intent)
+                        .getResponse();
+                }
+                else {
+                    console.log('user stopped info request - no option');
+                    return input.responseBuilder
+                        .speak('Ok')
+                        .withShouldEndSession(flase)
+                        .getResponse();
+                }
             }
-            else if (intent === 'Bearbeitungsstatus') {
-                console.log('user requested info regarding the getData Intent');
-                return handlerInput.responseBuilder
-                    .speak(getDataIntentInfo)
-                    .withShouldEndSession(false)
-                    .getResponse();
-            }
-            else if (intent === 'aufnehmen') {
-                console.log('user requested info regarding the saveData Intent');
-                return handlerInput.responseBuilder
-                    .speak(saveIntentInfo)
-                    .withShouldEndSession(false)
-                    .getResponse();
-            }
+        }
+        else 
+        {
+            console.log('user stopped info request - no more info slot');
+            return input.responseBuilder
+                .speak('Ok')
+                .withShouldEndSession(false)
+                .getResponse();
         }
     }
 };
 
-const maintenanceman = {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+
+const MaintenancemanHandler = {
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
         return request.type === 'LaunchRequest'
             || (request.type === 'IntentRequest'
-                && request.intent.name === 'maintenanceman');
+                && request.intent.name === 'Maintenanceman');
     },
-    handle(handlerInput) {
+    handle(input) {
 
-        return handlerInput.responseBuilder
+        return input.responseBuilder
             .speak("Ihr Hausmeister heißt Herr Krause und ist Wochentags von 9 bis 17 Uhr unter der Nummer 0 8 1 0 0 4 3 5 5 erreichbar")
             //.withsimpleCard(SKILL_NAME, "Der Hausmeister Heißt Herr Krause und ist Wochentags von 9 bis 17 Uhr unter der Nummer 08100 ereichbar")
             .getResponse();
     },
 };
 
-const bincollection = {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+const BinCollectionHandler = {
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
         return request.type === 'LaunchRequest'
             || (request.type === 'IntentRequest'
-                && request.intent.name === 'bincollection');
+                && request.intent.name === 'BinCollection');
     },
-    handle(handlerInput) {
+    handle(input) {
 
-        return handlerInput.responseBuilder
+        return input.responseBuilder
             .speak("Der Müll wird jeden Donnerstag Vormittag abgeholt")
             //.withsimpleCard(SKILL_NAME, "Der Müll wird immer Donnerstags Vormittags abgeholt")
             .getResponse();
     },
 };
 
-const offical = {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+const OfficalHandler = {
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
         return request.type === 'LaunchRequest'
             || (request.type === 'IntentRequest'
-                && request.intent.name === 'offical');
+                && request.intent.name === 'Offical');
     },
-    handle(handlerInput) {
+    handle(input) {
 
-        return handlerInput.responseBuilder
+        return input.responseBuilder
             .speak("Der Name Ihres zuständigen Sachbearbeiters ist Herr Meier")
             //.withsimpleCard(SKILL_NAME, "Ihr zuständiger Sachbearbeiter heißt Herr Meier")
             .getResponse();
     },
 };
 
-const electricitymeter = {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+const ElectricitymeterHandler = {
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
         return request.type === 'LaunchRequest'
             || (request.type === 'IntentRequest'
-                && request.intent.name === 'electricitymeter');
+                && request.intent.name === 'Electricitymeter');
     },
-    handle(handlerInput) {
+    handle(input) {
 
-        return handlerInput.responseBuilder
+        return input.responseBuilder
             .speak("Der Strom wird das nächste Mal am Montag den 17.12.2018 abgelesen")
             //.withsimpleCard(SKILL_NAME, "Der Strom wird in 2018 am Montag den 17.12. abgelesen")
             .getResponse();
@@ -434,13 +531,13 @@ const electricitymeter = {
 };
 
 const HelpHandler = {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
         return request.type === 'IntentRequest'
             && request.intent.name === 'AMAZON.HelpIntent';
     },
-    handle(handlerInput) {
-        return handlerInput.responseBuilder
+    handle(input) {
+        return input.responseBuilder
             .speak(HELP_MESSAGE)
             .reprompt(HELP_REPROMPT)
             .getResponse();
@@ -448,14 +545,14 @@ const HelpHandler = {
 };
 
 const ExitHandler = {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
         return request.type === 'IntentRequest'
             && (request.intent.name === 'AMAZON.CancelIntent'
                 || request.intent.name === 'AMAZON.StopIntent');
     },
-    handle(handlerInput) {
-        return handlerInput.responseBuilder
+    handle(input) {
+        return input.responseBuilder
             .speak(STOP_MESSAGE)
             .withShouldEndSession(true)
             .getResponse();
@@ -463,14 +560,14 @@ const ExitHandler = {
 };
 
 const SessionEndedRequestHandler = {
-    canHandle(handlerInput) {
-        const request = handlerInput.requestEnvelope.request;
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
         return request.type === 'SessionEndedRequest';
     },
-    handle(handlerInput) {
-        console.log(`Session ended with reason: ${handlerInput.requestEnvelope.request.reason}`);
+    handle(input) {
+        console.log(`Session ended with reason: ${input.requestEnvelope.request.reason}`);
 
-        return handlerInput.responseBuilder.getResponse();
+        return input.responseBuilder.getResponse();
     },
 };
 
@@ -478,92 +575,27 @@ const ErrorHandler = {
     canHandle() {
         return true;
     },
-    handle(handlerInput, error) {
+    handle(input, error) {
         console.log(`Error handled: ${error.message}`);
 
-        return handlerInput.responseBuilder
+        return input.responseBuilder
             .speak('Sorry, an error occurred.')
             .reprompt('Sorry, an error occurred.')
             .getResponse();
     },
 };
 
-const HELP_MESSAGE = 'Um mehr öber die Funktionen dieses Skills zu erfahren sagen Sie: Info zum Mieter-Portal';
-const HELP_REPROMPT = 'HelpRepromt';
-const STOP_MESSAGE = 'Auf Wiedersehen';
-const skillBuilder = askSDK.SkillBuilders.standard();
-
-const deleteIntentInfo = 'Löschen Info';
-const saveIntentInfo = 'Schadensmeldung aufnehmen Info';
-const getDataIntentInfo = 'Bearbeitungsstatus erfragen Info';
-
-
-function supportsDisplay(handlerInput) {
-    var hasDisplay =
-        handlerInput.requestEnvelope.context &&
-        handlerInput.requestEnvelope.context.System &&
-        handlerInput.requestEnvelope.context.System.device &&
-        handlerInput.requestEnvelope.context.System.device.supportedInterfaces &&
-        handlerInput.requestEnvelope.context.System.device.supportedInterfaces.Display
-    return hasDisplay;
-}
-
-function getDisplay(response, /*attributes,*/ imageUrl, displayType, title, text1, text2, text3) {
-    const image = new askSDK.ImageHelper().addImageInstance(imageUrl).getImage();
-
-    const textContent = new askSDK.RichTextContentHelper()
-        .withPrimaryText(text1)
-        .withSecondaryText(text2)
-        .withTertiaryText(text3)
-        .getTextContent();
-
-    if (displayType == 'BodyTemplate7') {
-        //use Background image
-        response.addRenderTemplateDirective({
-            type: displayType,
-            backButton: 'visible',
-            backgroundImage: image,
-            title: title,
-            textContent: textContent,
-        });
-    }
-    else {
-        response.addRenderTemplateDirective({
-            //use 340x340 image on the right with text on the left
-            backButton: 'visible',
-            image: image,
-            title: title,
-            textContent: textContent,
-        });
-    }
-    console.log('textContent is: ', JSON.stringify(textContent, null, 2));
-    return response;
-}
-
-function idResponseOutput(id)
-{
-    var output = '';
-
-    for (var i = 0; x < 2; i++)
-    {
-        output = id.charAt(i) + ' ';
-    }
-
-    return output;
-}
-
-
 exports.handler = skillBuilder
     .addRequestHandlers(
         LaunchRequestHandler,
-        SaveDataToDatabaseHandler,
+        SetDataHandler,
         GetDataByIdHandler,
         DeleteDataByIdHandler,
         IntentInfoHandler,
-        offical,
-        electricitymeter,
-        maintenanceman,
-        bincollection,
+        OfficalHandler,
+        ElectricitymeterHandler,
+        MaintenancemanHandler,
+        BinCollectionHandler,
         HelpHandler,
         ExitHandler,
         SessionEndedRequestHandler,
