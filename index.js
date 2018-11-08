@@ -1,54 +1,61 @@
 const askSDK = require('ask-sdk');
-/*
-const askSDKCore = require('ask-sdk-core');
-const askSDKDynamodbAdap = require('ask-sdk-dynamodb-persistence-adapter');
-const askSDKModel = require('ask-sdk-model');
-const askSDKS3Adap = require('ask-sdk-s3-persistence-adapter');
-const askSDKV1Adap = require('ask-sdk-v1adapter');
-*/
+
 const awsSDK = require('aws-sdk');
 const util = require('util');
-//const promisify = util.promisify;
 awsSDK.config.update({
     region: "us-east-1" // or whatever region your lambda and dynamo is
 });
 
 
 const appId = 'amzn1.ask.skill.77faba7d-b52b-4722-b441-82011b4c9151';
-const table = 'DynamoDB-Test';
+const table = 'database-test';
 const docClient = new awsSDK.DynamoDB.DocumentClient();
-
-// convert callback style functions to promises
-/*
-const dbScan = promisify(docClient.scan, docClient);
-const dbGet = promisify(docClient.get, docClient);
-const dbPut = promisify(docClient.put, docClient);
-const dbDelete = promisify(docClient.delete, docClient);
-*/
 
 const instructions = `Skill beginnt`;
 
 var dataTest;
 
 
-//const LaunchRequest = 
+const LaunchRequestHandler = 
+{
+    canHandle(handlerInput)
+    {
+        const request = handlerInput.requestEnvelope.request;
+
+        return request.type === 'LaunchRequest';
+    },
+    handle(handlerInput)
+    {
+
+        return handlerInput.responseBuilder
+        .speak("Welcome")
+        .getResponse();   
+    }
+
+}
+
 const GetDataHandler =
 {
     canHandle(handlerInput) {
         const request = handlerInput.requestEnvelope.request;
 
-        return request.type === 'LaunchRequest'
-            || (request.type === 'IntentRequest' && request.intent.name === 'Speichern');
+        return request.type === 'IntentRequest' && request.intent.name === 'Auslesen';
     },
     handle(handlerInput) {
+
+        const request = handlerInput.requestEnvelope.request;
+        const slots = request.intent.slots;
+
+        var lastName = slots.lastName.value;
+        var firstName = slots.firstName.value;
 
         var params = 
         {
             TableName: table,
             Key:
             {
-                'Name': 'Tom',
-                'ID': '12',
+                'lastname': lastName,
+                'firstName': firstName,
             }
         };
 
@@ -64,186 +71,20 @@ const GetDataHandler =
                 else
                 {
                     console.log('successfully read data: ' + JSON.stringify(data,null,2))
-                    var name = data.Item.Name;
-                    var age = data.Item.ID;
+                    var lastname = data.Item.lastname;
+                    var firstName = data.Item.firstName;
+                    var age = data.Item.age;
                     resolve(handlerInput.responseBuilder
-                        .speak("The name is " + name + 'and he is ' + age)
+                        .speak("The name is " + firstName + ' ' + lastname +' and he is ' + age)
                         .getResponse());
                 }
             })
         });
-        
-        
-        
-        
-        
     },
 };    
         
-/*        
-handle(handlerInput) 
-{
-    return new Promise((resolve, reject) => 
-    {
-      handlerInput.attributesManager.getPersistentAttributes()
-        .then((attributes) => 
-        {
-          attributes.foo = 'bar';
-          handlerInput.attributesManager.setPersistentAttributes(attributes);
 
-          return handlerInput.attributesManager.savePersistentAttributes();
-        })
-        .then(() => 
-        {
-          resolve(handlerInput.responseBuilder
-            .speak('Persistent attributes updated!')
-            .getResponse());
-        })
-        .catch((error) => 
-        {
-          reject(error);
-        });
-    });
-  },
-};    
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        const name = "Tom";
-
-        var dateObj = new Date();
-        var day = dateObj.getUTCDate();
-        var month = dateObj.getUTCMonth() + 1;
-        var hour = dateObj.getHours();
-        var minutes = dateObj.getMinutes();
-        //var seconds = dateObj.getSeconds();
-        const id = "12"; //month + "" + hour + "" + day + "" + minutes;
-        //id = id.toString();
-
-        const dynamoParams = {
-            TableName: table,
-            Key: {
-                "Name": name,
-                "ID": id,
-            }
-        };
-
-/*
-            docClient.get(dynamoParams, function (err, data) {
-                if (err) {
-                    console.error("failed", JSON.stringify(err, null, 2));
-                } else {
-                    console.log("Successfully read data", JSON.stringify(data, null, 2));
-                    console.log("data.Item.Name: " + data.Item.Name);
-                }
-            }).then();
-
-        
-        let promise = new Promise(function (resolve, reject) {
-            docClient.get(dynamoParams, function (err, data) {
-                if (err) {
-                    console.error("failed", JSON.stringify(err, null, 2));
-                    reject(err);
-                } else {
-                    console.log("Successfully read data", JSON.stringify(data, null, 2));
-                    console.log("data.Item.Name: " + data.Item.Name);
-                    //tuwas(data, handlerInput);
-                    dataTest = data;
-                    resolve(data);
-                }
-            })
-        });
-
-
-
-        var dataBaseCall = function () {
-            promise.then(function (fulfilled) {
-                console.log('worked:' +fulfilled.Item.Name);
-            })
-                .catch(function (error) {
-                    console.log(error)
-                });
-        }
-
-        var dataTest = dataBaseCall();
-        
-        //console.log('dataEnd is = '+ dataTest + + JSON.stringify(dataTest,null,2));
-        return handlerInput.responseBuilder
-        .speak('worked' )//+ dataTest.Item.Name)
-        .getResponse();
-
-
-
-    }
-*/
-
-
-    /*
-    docClient.get(dynamoParams, function (err, data) {
-            if (err) {
-                console.error("Fehlgeschlagen", JSON.stringify(err, null, 2));
-                return handlerInput.responseBuilder
-                    .speak('Fail')
-                    .getResponse();
-
-            } else {
-                console.log("Successfully read data", JSON.stringify(data, null, 2));
-                console.log("This is name: " + data.Item.Name);
-                dataTom = data.Item.Name;
-                console.log("this is dataTom: " + dataTom);
-                //return data;
-
-                var toType = function (obj) {
-                    return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
-                }
-
-                console.log(toType(dataTom));
-            }
-        });
-
-        console.log("T");
-
-        var toType = function (obj) {
-            return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
-        }
-
-        console.log(toType(dataTom));
-
-        var responseVar = "worked" + JSON.stringify(dataTom, null, 2);
-        return handlerInput.responseBuilder
-            .speak(responseVar)
-            .getResponse();
-
-
-
-    }*/
-//};
-
-/*function tuwas(data, handlerInput) {
-     console.log("this should be data before return:" + JSON.stringify(data,null,2));   
-       
-     var toType = function (obj) {
-        return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
-    }
-
-    console.log(data.Item.Name);
-    //console.log(dataTom);
-
-    return handlerInput.responseBuilder
-        .speak('Worked: name is ' + data.Item.Name)
-        .getResponse();
-}
-
-*/
-/*const writeInDatabaseHandler = 
+const writeInDatabaseHandler = 
 {
     canHandle(handlerInput)
     {
@@ -253,12 +94,40 @@ handle(handlerInput)
     },
     handle(handlerInput)
     {
-        const name = "Tom";
+        const request = handlerInput.requestEnvelope.request;
+        const slots = request.intent.slots;
+
+        const lastName = slots.lastName.value;
+        var firstName = slots.firstName.value;
+        var ageInt = slots.age.value;
+        var age = parseInt(ageInt,10);
+
+        if (request.intent.confirmationStatus === 'NONE')
+        {
+            return handlerInput.responseBuilder
+            .addConfirmIntentDirective(currentIntent)
+            .getResponse();
+        }
+
+        
+
+
+        var dateObj = new Date();
+        var day = dateObj.getUTCDate();
+        var hour = dateObj.getHours();
+        var minutes = dateObj.getMinutes();
+        var seconds = dateObj.getSeconds();
+        const reportId = seconds + "" + hour + "" + day + "" + minutes;
+        const reportDate = dateObj;
+
 
         const dynamoParams = {
         TableName: table,
         Item: {
-            "Name": name,
+            "lastname": lastName,
+            "firstName": firstName,
+            "age": age,
+            'id': reportId,
         }
     };
 
@@ -280,7 +149,7 @@ handle(handlerInput)
         .speak('Wurde gespeichert')
         .getResponse();
     }
-};*/
+};
 
 const HelpHandler = {
     canHandle(handlerInput) {
@@ -344,8 +213,9 @@ const skillBuilder = askSDK.SkillBuilders.standard();
 
 exports.handler = skillBuilder
     .addRequestHandlers(
+        LaunchRequestHandler,
         GetDataHandler,
-        //writeInDatabaseHandler
+        writeInDatabaseHandler,
         HelpHandler,
         ExitHandler,
         SessionEndedRequestHandler
@@ -353,9 +223,3 @@ exports.handler = skillBuilder
     .addErrorHandlers(ErrorHandler)
     .lambda();
 
-
-
-/**
- *        getItem has a parameter "data" which is a data structure containing all information of the response
- *        + returning "data" should write this structure in whatever var you parse it to
- */
