@@ -11,6 +11,7 @@ const reportTable = 'AareonForum';
 const docClient = new awsSDK.DynamoDB.DocumentClient();
 const bgImageUrl = '';
 
+const SKILL_NAME = 'Mieter-Portal';
 const HELP_REPROMPT = 'HelpRepromt';
 const HELP_MESSAGE = 'Um mehr über die Funktionen dieses Skills zu erfahren sagen Sie: Info zum Mieter-Portal';
 const STOP_MESSAGE = 'Auf Wiedersehen';
@@ -70,11 +71,62 @@ function getDisplay(response, /*attributes,*/ imageUrl, displayType, title, text
 function idResponseOutput(id) {
     var output = '';
 
-    for (var i = 0; x < 2; i++) {
-        output = id.charAt(i) + ' ';
+    for (var i = 0; i < 3; i++) {
+        output = output + id.charAt(i) + ' ';
+    }
+    output = output + id.charAt(3);
+    return output;
+}
+
+function createId(dateObj) {
+    var year = dateObj.getFullYear();
+    var month = dateObj.getMonth();
+    var day = dateObj.getUTCDate();
+    var hours = dateObj.getHours();
+    var minutes = dateObj.getMinutes();
+    var seconds = dateObj.getSeconds();
+
+    if (parseInt(minutes, 10) < 10) {
+        minutes = '0' + minutes;
     }
 
-    return output;
+    if (day == '27') {
+        day = '1';
+    }
+    else if (day == '28') {
+        day = '3';
+    }
+    else if (day == '29') {
+        day = '5'
+    }
+    else {
+        day = checksum(day);
+    }
+
+    if (parseInt(hours, 10) > 9) {
+        day = parseInt(day, 10) + 1;
+        if (parseInt(day, 10) > 9) {
+            day = checksum(day);
+        }
+        hours = checksum(hours);
+    }
+
+    var createdId = day + '' + hours + '' + minutes;
+    return createdId;
+}
+
+function checksum(numIn) {
+    numIn = numIn + '';
+    var i = parseInt(numIn.charAt(0));
+    var j = parseInt(numIn.charAt(1));
+    var sum = i + j;
+    sum = sum + '';
+
+    if (parseInt(sum,10) > 9) {
+        sum = checksum(sum);
+    }
+
+    return sum;
 }
 
 
@@ -186,69 +238,65 @@ const SetDataHandler =
                 //try&catch to make sure all errors while trying to save data to database are caught
                 try {
                     var dateObj = new Date();
+
                     var year = dateObj.getFullYear();
                     var month = dateObj.getMonth();
                     var day = dateObj.getUTCDate();
                     var hours = dateObj.getHours();
                     var minutes = dateObj.getMinutes();
                     var seconds = dateObj.getSeconds();
-                    //making sure that id contains 4 numbers since var can only contain 1 nummber if value < 10
-                    if (parseInt(minutes, 10) < 10) {
-                        mintues = '0' + minutes;
-                    }
-                    else {
-                        if (parseInt(hours, 10) < 10) {
-                            hours = '0' + hours;
-                        }
 
-                        //creating id and report date, still needs to be checked for daylight savings
-                        var id = minutes + '' + hours;   //year + '' + month + '' + day + '' + hours + '' + minutes + '' + seconds; 
-                        var reportDate = day + '.' + month + '.' + year;
-                        var name = firstName + ' ' + lastName;
-                        
-                        //params for database call, currently only supporting last name
-                        var params =
+                    var id = createId(dateObj);
+                    month = parseInt(month, 10) + 1;
+
+                    //creating id and report date, still needs to be checked for daylight savings
+                    //var id = minutes + '' + hours;   //year + '' + month + '' + day + '' + hours + '' + minutes + '' + seconds; 
+                    var reportDate = day + '.' + month + '.' + year;
+                    var name = firstName + ' ' + lastName;
+
+                    //params for database call, currently only supporting last name
+                    var params =
+                    {
+                        TableName: reportTable,
+                        Item:
                         {
-                            TableName: reportTable,
-                            Item:
-                            {
-                                'id': id,
-                                'name': lastName.value,
-                                'date': reportDate,
-                                'location': location.value,
-                                'object': object.value,
-                                'state': state.value,
-                                'sop': 'Meldung aufgenommen' //sop = state of progress
-                            }
-                        };
+                            'id': id,
+                            'name': lastName.value,
+                            'date': reportDate,
+                            'location': location.value,
+                            'object': object.value,
+                            'state': state.value,
+                            'sop': 'Meldung aufgenommen' //sop = state of progress
+                        }
+                    };
 
-                        //promise for database.put methode
-                        return new Promise((resolve, reject) => {
-                            docClient.put(params, function (err, data) {
-                                if (err) {
-                                    console.error('failed to add item to database', JSON.stringify(err, null, 2));
-                                    reject(input.responseBuilder
-                                        .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
-                                        .withShouldEndSession(false)
-                                        .getResponse());
-                                }
-                                else {
-                                    console.log('successfully added item to database', JSON.stringify(data, null, 2));
-                                    resolve(input.responseBuilder
-                                        .speak('Die Meldung wurde mit der ID ' + id + ' aufgenommen')
-                                        .withShouldEndSession(false)
-                                        .getResponse());
-                                }
-                            })
+                    //promise for database.put methode
+                    return new Promise((resolve, reject) => {
+                        docClient.put(params, function (err, data) {
+                            if (err) {
+                                console.error('failed to add item to database', JSON.stringify(err, null, 2));
+                                reject(input.responseBuilder
+                                    .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
+                                    .withShouldEndSession(false)
+                                    .getResponse());
+                            }
+                            else {
+                                console.log('successfully added item to database', JSON.stringify(data, null, 2));
+                                resolve(input.responseBuilder
+                                    .speak('Die Meldung wurde mit der ID ' + id + ' aufgenommen')
+                                    .withShouldEndSession(false)
+                                    .getResponse());
+                            }
                         })
-                    }
+                    })
                 }
+
                 //catches any error the .put methode doesn't
                 catch (err) {
                     console.log('caught exeption: failed to add item to database - ' + err);
                     return input.responseBuilder
                         .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
-                        .withSchouldEndSession(false)
+                        .withShouldEndSession(false)
                         .getResponse();
                 }
             }
@@ -280,82 +328,61 @@ GetDataByIdHandler = {
         }
         else {
             const idInvalid = 'Ungültige Eingabe, wie lautet die vierstellige ei die?';
-            try {
-                console.log('entered try block');
-                console.log('checking if id has leading 0');
-                idNum = parseInt(id.value, 10);
-                if (id.value.charAt(0) === '0') {
-                    console.log('id has leading 0');
-                    idNum = idNum * 10;
-                }
-                else 
-                {
-                    console.log('id doesn`t have leading 0');
-                }
-                console.log('checking if id has 4 numbers');
-                if (idNum < 1000 || id > 9999) {
-                    console.log('ID invalid' + id + ' idNum value not in valid range');
-                    //slots.id.value = null;
-                    return input.responseBuilder
-                        .speak(idInvalid)
-                        .addElicitSlotDirective('id', request.intent)
-                        .getResponse();
-                }
-                console.log('try block finished');
-            }
-            catch (err) {
-                console.log('ID invalid' + id + 'parseInt failed');
-                slots.id.value = null;
+            var regEx = /^\d{4}$/;
+            if (!id.value.match(regEx)) {
+                console.log('id vaule does not match /^\d{4}$/ --> ' + id);
                 return input.responseBuilder
                     .speak(idInvalid)
                     .addElicitSlotDirective('id', request.intent)
                     .getResponse();
             }
-            try{
-            var params =
-            {
-                TableName: reportTable,
-                Key:
-                {
-                    'id': id.value,
-                },
-            };
+            else {
 
-            return new Promise((resolve, reject) => {
-                docClient.get(params, function (err, data) {
-                    if (err) {
-                        console.error('failed to read data' + JSON.stringify(err, null, 2));
-                        reject(input.responseBuilder
-                            .speak('Datenbanzugriff fehlgeschlagen')
-                            .withShouldEndSession(false)
-                            .getResponse());
-                    }
-                    else {
-                        console.log('successfully read data: ' + JSON.stringify(data, null, 2))
-                        const item = data.Item;
-                        var object = item.object;
-                        var location = item.location;
-                        var sop = item.sop;
-                        var date = item.date;
-                        var speechOutput = 'Ihre Schadensmeldung vom ' + date + ' mit der Id '
-                            + id.value + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
-                            + object + ', hat den Bearbeitungsstatus ' + sop + '.';
-                        resolve(input.responseBuilder
-                            .speak(speechOutput)
-                            .withShouldEndSession(false)
-                            .getResponse());
-                    }
-                })
-            });
+                try {
+                    var params =
+                    {
+                        TableName: reportTable,
+                        Key:
+                        {
+                            'id': id.value,
+                        },
+                    };
+
+                    return new Promise((resolve, reject) => {
+                        docClient.get(params, function (err, data) {
+                            if (err) {
+                                console.error('failed to read data' + JSON.stringify(err, null, 2));
+                                reject(input.responseBuilder
+                                    .speak('Datenbanzugriff fehlgeschlagen')
+                                    .withShouldEndSession(false)
+                                    .getResponse());
+                            }
+                            else {
+                                console.log('successfully read data: ' + JSON.stringify(data, null, 2))
+                                const item = data.Item;
+                                var object = item.object;
+                                var location = item.location;
+                                var sop = item.sop;
+                                var date = item.date;
+                                var speechOutput = 'Ihre Schadensmeldung vom ' + date + ' mit der Id '
+                                    + id.value + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
+                                    + object + ', hat den Bearbeitungsstatus ' + sop + '.';
+                                resolve(input.responseBuilder
+                                    .speak(speechOutput)
+                                    .withShouldEndSession(false)
+                                    .getResponse());
+                            }
+                        })
+                    });
+                }
+                catch (err) {
+                    console.log('caught exeption: failed to read data' + err + ' speech output crashed. id value: ' + JSON.stringify(id.value))
+                    return input.responseBuilder
+                        .speak('Datenbankzugriff fehlgeschlagen. Ihre Meldung konnte nicht aufgerufen werden')
+                        .getResponse();
+                }
+            }
         }
-        catch(err)
-        {
-            console.log('caught exeption: failed to read data' + err + ' speech output crashed. id value: ' + JSON.stringify(id.value))
-            return input.responseBuilder
-                .speak('Datenbankzugriff fehlgeschlagen. Ihre Meldung konnte nicht aufgerufen werden')
-                .getResponse();
-        }
-    }
     },
 };
 
@@ -369,7 +396,8 @@ const DeleteDataByIdHandler =
     },
     handle(input) {
         const request = input.requestEnvelope.request;
-        const id = request.intent.slots.id;
+        const slots = request.intent.slots;
+        const id = slots.id;
 
         if (request.intent.confirmationStatus === 'DENIED') {
             console.log('intent cancelled by user');
@@ -377,43 +405,31 @@ const DeleteDataByIdHandler =
                 .speak('Löschvorgang abgebrochen')
                 .getResponse();
         }
-        else {
-            if (request.intent.confirmationStatus === 'NONE') {
-                const invalidIdMsg = 'Ungültige Eingabe. Wie lautet die vierstellige ei. die?'
 
-                if (!id.hasOwnProperty('value') || id.value == '?') {
-                    console.log('id value invalid --> elicit id slot');
+        else if (request.intent.confirmationStatus === 'NONE') {
+            const missingIdMsg = 'Wie lautet die vierstellige ei, die?'
+
+            if (!id.hasOwnProperty('value')) {
+                console.log('id value invalid --> elicit id slot');
+                return input.responseBuilder
+                    .speak(missingIdMsg)
+                    .addElicitSlotDirective('id', request.intent)
+                    .getResponse();
+            }
+            else {
+                var regEx = /^\d{4}$/;
+                const idInvalid = 'Ungültige Eingabe. Wie lautet die vierstellige ei, die?'
+                if (!id.value.match(regEx)) {
+                    console.log('id vaule does not match regEx --> id: ' + id.value);
                     return input.responseBuilder
-                        .speak(invalidIdMsg)
+                        .speak(idInvalid)
                         .addElicitSlotDirective('id', request.intent)
                         .getResponse();
                 }
                 else {
-                    try {
-                        idNum = parseInt(id, 10);
-                        if (id.charAt(0) === '0') {
-                            idNum = idNum * 10;
-                        }
-
-                        if (idNum < 1000 || id > 9999) {
-                            console.log('ID invalid' + id);
-                            slots.id.value = null;
-                            return input.responseBuilder
-                                .speak(invalidIdMsg)
-                                .addElicitSlotDirective('id', request.intent)
-                                .getResponse();
-                        }
-                    }
-                    catch (err) {
-                        console.error('ID invalid ' + id + ' parseInt failed');
-                        return input.responseBuilder
-                            .speak(invalidIdMsg)
-                            .addElicitSlotDirective('id', request.intent)
-                            .getResponse();
-                    }
                     console.log('getting user confirmation');
-                    var idOutput = idResponseOutput(id);
-                    const intentConfirmationMsg = 'Sind Sie sicher, dass Sie die Meldung mit der ei. Die. '
+                    var idOutput = idResponseOutput(id.value);
+                    const intentConfirmationMsg = 'Sind Sie sicher, dass Sie die Meldung mit der ei Die '
                         + idOutput + ' löschen möchten?';
                     return input.responseBuilder
                         .speak(intentConfirmationMsg)
@@ -421,17 +437,17 @@ const DeleteDataByIdHandler =
                         .getResponse();
                 }
             }
-
+        }
+        else {
             try {
                 var params =
                 {
                     TableName: reportTable,
                     Key:
                     {
-                        'id': id
+                        'id': id.value
                     }
                 }
-
                 return new Promise((resolve, reject) => {
                     docClient.delete(params, function (err, data) {
                         if (err) {
