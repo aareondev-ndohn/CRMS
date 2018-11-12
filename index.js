@@ -7,18 +7,22 @@ awsSDK.config.update(
 );
 
 
-const reportTable = '';
+const reportTable = 'AareonForum';
 const docClient = new awsSDK.DynamoDB.DocumentClient();
 const bgImageUrl = '';
 
-const HELP_MESSAGE = 'Um mehr öber die Funktionen dieses Skills zu erfahren sagen Sie: Info zum Mieter-Portal';
 const HELP_REPROMPT = 'HelpRepromt';
+const HELP_MESSAGE = 'Um mehr über die Funktionen dieses Skills zu erfahren sagen Sie: Info zum Mieter-Portal';
 const STOP_MESSAGE = 'Auf Wiedersehen';
 const skillBuilder = askSDK.SkillBuilders.standard();
 
 const deleteIntentInfo = 'Löschen Info';
 const saveIntentInfo = 'Schadensmeldung aufnehmen Info';
 const getDataIntentInfo = 'Bearbeitungsstatus erfragen Info';
+
+const welcomeMessagelong = 'Willkommen in Ihrem Mieter-Portal, Sie können eine Schadensmeldung aufnehmen oder sich nach dem Status erkundigen'
+const welcomeMessage = 'Willkommen in Ihrem Mieter-Portal';
+
 
 
 function supportsDisplay(input) {
@@ -73,6 +77,23 @@ function idResponseOutput(id) {
     return output;
 }
 
+
+const LaunchRequestHandler =
+{
+    canHandle(input) {
+        const request = input.requestEnvelope.request;
+
+        return request.type === 'LaunchRequest';
+    },
+    handle(input) {
+        console.log('started skill successfully');
+        return input.responseBuilder
+            .speak(welcomeMessagelong)
+            .withShouldEndSession(false)
+            .getResponse();
+    }
+}
+
 const SetDataHandler =
 {
     canHandle(input) {
@@ -86,17 +107,18 @@ const SetDataHandler =
         const intent = request.intent;
         const slots = intent.slots;
 
-        const object = slots.object.value;
-        const location = slots.location.value;
-        const state = slots.state.value;
-        const firstName = slots.firstName.value;
-        const lastName = slots.lastName.value;
+        const object = slots.object;
+        const location = slots.location;
+        const state = slots.state;
+        const firstName = slots.firstName;
+        const lastName = slots.lastName;
         const missigLocationMessage = 'Um welchen Ort geht es?';
         const missingObjectMessage = 'Um welchen Gegenstand handelt es sich?';
         const missingStateMessage = 'Wie ist der Zustand des Objekts?';
         const elicitFirstNameMsg = 'Wie lautet Ihr Vorname?';
         const elicitLastNameMsg = 'Wie lautet Ihr Nachname?';
-
+        const noMatch = 'ER_SUCCESS_NO_MATCH';
+        //if intent confirmation = denied, intent will end
         if (request.intent.confirmationStatus === 'DENIED') {
             console.log('user cancelled "SaveReport"-intent with current slot values')
             return input.responseBuilder
@@ -105,108 +127,130 @@ const SetDataHandler =
                 .getResponse();
         }
         else {
-            if (request.confirmationStatus === 'NONE') {
+            // if intent starts, first request will not be confirmed
+            if (request.intent.confirmationStatus === 'NONE') {
                 //maybe add: if (obj, loc, state, name..... == null)
-                if (location == null || location == '?') {
+                //checking if value property of slot exist (only exist if filled), should it exist check if valid
+                //+ if not elicit slot
+                if (!location.hasOwnProperty('value') || location.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
                     console.log('elicit location slot');
                     return input.responseBuilder
                         .speak(missigLocationMessage)
                         .addElicitSlotDirective('location', intent)
                         .getResponse();
                 }
-                else if (object == null || object == '?') {
+                else if (!object.hasOwnProperty('value') || object.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
                     console.log('elicit object slot');
                     return input.responseBuilder
                         .speak(missingObjectMessage)
                         .addElicitSlotDirective('object', intent)
                         .getResponse();
                 }
-                else if (state == null || state == '?') {
+                else if (!state.hasOwnProperty('value') || state.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
                     console.log('elicit state slot');
                     return input.responseBuilder
                         .speak(missingStateMessage)
                         .addElicitSlotDirective('state', intent)
                         .getResponse();
                 }
-                else if (firstName == null || firstName == '?') {
+                //first name is currently taken directly form voice input so it can't be check against any data. therefore unusable for database
+                /*else if (!firstName.hasOwnProperty('value')){// || firstName.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
                     console.log('elicit first name');
                     return input.responseBuilder
                         .speak(elicitFirstNameMsg)
                         .addElicitSlotDirective('firstName')
                         .getResponse();
-                }
-                else if (lastName == null || firstName == '?') {
+                }*/
+                //last name is checked against list, therefore applicable for database usage
+                else if (!lastName.hasOwnProperty('value') || lastName.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
                     console.log('elicit last name');
                     return input.responseBuilder
                         .speak(elicitLastNameMsg)
+                        .addElicitSlotDirective('lastName', intent)
                         .getResponse();
                 }
 
-
+                // intent confirmation requested, so next input-object's slot values aren't checked
                 console.log('getting intent confirmation');
                 var speechOutput = 'Möchten Sie die Meldung mit den Daten: Ort '
-                    + location + ', Objekt ' + object + ', Zustand '
-                    + state + ' unter dem Namen ' + firstName + ' '
-                    + lastName + ' aufnehmen?';
+                    + location.value + ', Objekt ' + object.value + ', Zustand '
+                    + state.value + ' unter dem Namen ' //+ firstName.value + ' '
+                    + lastName.value + ' aufnehmen?';
                 return input.responseBuilder
                     .speak(speechOutput)
                     .addConfirmIntentDirective(intent)
                     .getResponse();
 
             }
-
-            var dateObj = new Date();
-            var year = dateObj.getFullYear();
-            var month = dateObj.getMonth();
-            var day = dateObj.getUTCDate();
-            var hours = dateObj.getHours();
-            var minutes = dateObj.getMinutes();
-            var seconds = dateObj.getSeconds();
-
-            if (parseInt(minutes, 10) < 10) {
-                mintues = '0' + minutes;
-            }
             else {
-                if (parseInt(hours, 10) < 10) {
-                    hours = '0' + hours;
-                }
-
-
-                var id = minutes + '' + hours;   //year + '' + month + '' + day + '' + hours + '' + minutes + '' + seconds; 
-                var reportDate = day + '.' + month + '.' + year;
-
-                var params =
-                {
-                    TableName: reportTable,
-                    Item:
-                    {
-                        'id': id,
-                        'date': reportDate,
-                        'location': location,
-                        'object': object,
-                        'state': state,
-                        'sop': 'Meldung aufgenommen' //sop = state of progress
+                //try&catch to make sure all errors while trying to save data to database are caught
+                try {
+                    var dateObj = new Date();
+                    var year = dateObj.getFullYear();
+                    var month = dateObj.getMonth();
+                    var day = dateObj.getUTCDate();
+                    var hours = dateObj.getHours();
+                    var minutes = dateObj.getMinutes();
+                    var seconds = dateObj.getSeconds();
+                    //making sure that id contains 4 numbers since var can only contain 1 nummber if value < 10
+                    if (parseInt(minutes, 10) < 10) {
+                        mintues = '0' + minutes;
                     }
-                };
+                    else {
+                        if (parseInt(hours, 10) < 10) {
+                            hours = '0' + hours;
+                        }
 
-                return new Promise((resolve, reject) => {
-                    docClient.put(params, function (err, data) {
-                        if (err) {
-                            console.error('failed to add item to database', JSON.stringify(err, null, 2));
-                            reject(input.responseBuilder
-                                .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
-                                .withShouldEndSession(false)
-                                .getResponse());
-                        }
-                        else {
-                            console.log('successfully added item to database', JSON.stringify(data, null, 2));
-                            resolve(input.responseBuilder
-                                .speak('Die Meldung wurde mit der ID ' + id + ' aufgenommen')
-                                .withShouldEndSession(false)
-                                .getResponse());
-                        }
-                    })
-                })
+                        //creating id and report date, still needs to be checked for daylight savings
+                        var id = minutes + '' + hours;   //year + '' + month + '' + day + '' + hours + '' + minutes + '' + seconds; 
+                        var reportDate = day + '.' + month + '.' + year;
+                        var name = firstName + ' ' + lastName;
+                        
+                        //params for database call, currently only supporting last name
+                        var params =
+                        {
+                            TableName: reportTable,
+                            Item:
+                            {
+                                'id': id,
+                                'name': lastName.value,
+                                'date': reportDate,
+                                'location': location.value,
+                                'object': object.value,
+                                'state': state.value,
+                                'sop': 'Meldung aufgenommen' //sop = state of progress
+                            }
+                        };
+
+                        //promise for database.put methode
+                        return new Promise((resolve, reject) => {
+                            docClient.put(params, function (err, data) {
+                                if (err) {
+                                    console.error('failed to add item to database', JSON.stringify(err, null, 2));
+                                    reject(input.responseBuilder
+                                        .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
+                                        .withShouldEndSession(false)
+                                        .getResponse());
+                                }
+                                else {
+                                    console.log('successfully added item to database', JSON.stringify(data, null, 2));
+                                    resolve(input.responseBuilder
+                                        .speak('Die Meldung wurde mit der ID ' + id + ' aufgenommen')
+                                        .withShouldEndSession(false)
+                                        .getResponse());
+                                }
+                            })
+                        })
+                    }
+                }
+                //catches any error the .put methode doesn't
+                catch (err) {
+                    console.log('caught exeption: failed to add item to database - ' + err);
+                    return input.responseBuilder
+                        .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
+                        .withSchouldEndSession(false)
+                        .getResponse();
+                }
             }
         }
     }
@@ -220,60 +264,67 @@ GetDataByIdHandler = {
             && request.intent.name === 'GetDataById'
     },
     handle(input) {
+        console.log('started "GetDataById" intent')
         const request = input.requestEnvelope.request;
         const slots = request.intent.slots;
+        const id = slots.id;
 
-        var id = slots.id.value;
 
-        if (id == null) {
+        if (!id.hasOwnProperty('value')) {
+            console.log('elicit id value')
             const idMissingOutput = 'Wie lautet die vierstellige ei die?';
             return input.responseBuilder
                 .speak(idMissingOutput)
-                .repromt(idMissingOutput)
                 .addElicitSlotDirective('id', request.intent)
                 .getResponse();
         }
         else {
             const idInvalid = 'Ungültige Eingabe, wie lautet die vierstellige ei die?';
             try {
-                idNum = parseInt(id, 10);
-                if (id.charAt(0) === '0') {
+                console.log('entered try block');
+                console.log('checking if id has leading 0');
+                idNum = parseInt(id.value, 10);
+                if (id.value.charAt(0) === '0') {
+                    console.log('id has leading 0');
                     idNum = idNum * 10;
                 }
-
+                else 
+                {
+                    console.log('id doesn`t have leading 0');
+                }
+                console.log('checking if id has 4 numbers');
                 if (idNum < 1000 || id > 9999) {
-                    console.log('ID invalid' + id);
-                    slots.id.value = null;
+                    console.log('ID invalid' + id + ' idNum value not in valid range');
+                    //slots.id.value = null;
                     return input.responseBuilder
                         .speak(idInvalid)
-                        .repromt(idMissingOutput)
                         .addElicitSlotDirective('id', request.intent)
                         .getResponse();
                 }
+                console.log('try block finished');
             }
             catch (err) {
-                console.log('ID invalid' + id + 'parseInt failed')
+                console.log('ID invalid' + id + 'parseInt failed');
                 slots.id.value = null;
                 return input.responseBuilder
                     .speak(idInvalid)
-                    .repromt(idMissingOutput)
                     .addElicitSlotDirective('id', request.intent)
                     .getResponse();
             }
-
+            try{
             var params =
             {
                 TableName: reportTable,
                 Key:
                 {
-                    'id': id,
+                    'id': id.value,
                 },
             };
 
             return new Promise((resolve, reject) => {
                 docClient.get(params, function (err, data) {
                     if (err) {
-                        console.log('failed to read data' + JSON.stringify(err, null, 2));
+                        console.error('failed to read data' + JSON.stringify(err, null, 2));
                         reject(input.responseBuilder
                             .speak('Datenbanzugriff fehlgeschlagen')
                             .withShouldEndSession(false)
@@ -287,7 +338,7 @@ GetDataByIdHandler = {
                         var sop = item.sop;
                         var date = item.date;
                         var speechOutput = 'Ihre Schadensmeldung vom ' + date + ' mit der Id '
-                            + id + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
+                            + id.value + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
                             + object + ', hat den Bearbeitungsstatus ' + sop + '.';
                         resolve(input.responseBuilder
                             .speak(speechOutput)
@@ -297,6 +348,14 @@ GetDataByIdHandler = {
                 })
             });
         }
+        catch(err)
+        {
+            console.log('caught exeption: failed to read data' + err + ' speech output crashed. id value: ' + JSON.stringify(id.value))
+            return input.responseBuilder
+                .speak('Datenbankzugriff fehlgeschlagen. Ihre Meldung konnte nicht aufgerufen werden')
+                .getResponse();
+        }
+    }
     },
 };
 
@@ -310,7 +369,7 @@ const DeleteDataByIdHandler =
     },
     handle(input) {
         const request = input.requestEnvelope.request;
-        const id = request.intent.slots.id.value;
+        const id = request.intent.slots.id;
 
         if (request.intent.confirmationStatus === 'DENIED') {
             console.log('intent cancelled by user');
@@ -322,7 +381,7 @@ const DeleteDataByIdHandler =
             if (request.intent.confirmationStatus === 'NONE') {
                 const invalidIdMsg = 'Ungültige Eingabe. Wie lautet die vierstellige ei. die?'
 
-                if (id == null || id == '?') {
+                if (!id.hasOwnProperty('value') || id.value == '?') {
                     console.log('id value invalid --> elicit id slot');
                     return input.responseBuilder
                         .speak(invalidIdMsg)
@@ -414,7 +473,7 @@ const IntentInfoHandler =
         const request = input.requestEnvelope.request;
         const slots = request.intent.slots;
 
-        if (slot.moreInfo != 'no') {
+        if (!slots.moreInfo.hasOwnProperty('value') || (slots.moreInfo.value != 'no')) {
             if (slots.intent.value == null) {
                 console.log('wait for user input regarding intent info')
                 return input.responseBuilder
@@ -426,6 +485,7 @@ const IntentInfoHandler =
 
                 if (intent === 'löschen') {
                     console.log('user requested info regarding the delete intent');
+                    request.intent.slots.intent.value = null;
                     return input.responseBuilder
                         .speak(deleteIntentInfo)
                         .addElicitSlotDirective('moreInfo', request.intent)
@@ -433,6 +493,7 @@ const IntentInfoHandler =
                 }
                 else if (intent === 'Bearbeitungsstatus') {
                     console.log('user requested info regarding the getData Intent');
+                    request.intent.slots.intent.value = null;
                     return input.responseBuilder
                         .speak(getDataIntentInfo)
                         .addElicitSlotDirective('moreInfo', request.intent)
@@ -440,6 +501,7 @@ const IntentInfoHandler =
                 }
                 else if (intent === 'aufnehmen') {
                     console.log('user requested info regarding the saveData Intent');
+                    request.intent.slots.intent.value = null;
                     return input.responseBuilder
                         .speak(saveIntentInfo)
                         .addElicitSlotDirective('moreInfo', request.intent)
@@ -449,13 +511,12 @@ const IntentInfoHandler =
                     console.log('user stopped info request - no option');
                     return input.responseBuilder
                         .speak('Ok')
-                        .withShouldEndSession(flase)
+                        .withShouldEndSession(false)
                         .getResponse();
                 }
             }
         }
-        else 
-        {
+        else {
             console.log('user stopped info request - no more info slot');
             return input.responseBuilder
                 .speak('Ok')
@@ -469,9 +530,8 @@ const IntentInfoHandler =
 const MaintenancemanHandler = {
     canHandle(input) {
         const request = input.requestEnvelope.request;
-        return request.type === 'LaunchRequest'
-            || (request.type === 'IntentRequest'
-                && request.intent.name === 'Maintenanceman');
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'Maintenanceman';
     },
     handle(input) {
 
@@ -485,9 +545,8 @@ const MaintenancemanHandler = {
 const BinCollectionHandler = {
     canHandle(input) {
         const request = input.requestEnvelope.request;
-        return request.type === 'LaunchRequest'
-            || (request.type === 'IntentRequest'
-                && request.intent.name === 'BinCollection');
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'BinCollection';
     },
     handle(input) {
 
@@ -501,9 +560,8 @@ const BinCollectionHandler = {
 const OfficalHandler = {
     canHandle(input) {
         const request = input.requestEnvelope.request;
-        return request.type === 'LaunchRequest'
-            || (request.type === 'IntentRequest'
-                && request.intent.name === 'Offical');
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'Offical';
     },
     handle(input) {
 
@@ -517,9 +575,8 @@ const OfficalHandler = {
 const ElectricitymeterHandler = {
     canHandle(input) {
         const request = input.requestEnvelope.request;
-        return request.type === 'LaunchRequest'
-            || (request.type === 'IntentRequest'
-                && request.intent.name === 'Electricitymeter');
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'Electricitymeter';
     },
     handle(input) {
 
