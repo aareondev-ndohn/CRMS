@@ -283,7 +283,7 @@ const SetDataHandler =
                                 console.error('failed to add item to database', JSON.stringify(err, null, 2));
                                 reject(input.responseBuilder
                                     .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
-                                    .withShouldEndSession(false)
+                                    .withShouldEndSession(undefined)
                                     .getResponse());
                             }
                             else {
@@ -318,39 +318,56 @@ GetDataByIdHandler = {
             && request.intent.name === 'GetDataById'
     },
     handle(input) {
-        console.log('started "GetDataById" intent')
+        console.log('started "GetDataById" intent');
         const request = input.requestEnvelope.request;
         const slots = request.intent.slots;
         const id = slots.id;
+        const lastName = slots.lastName;
+        const noMatch = 'ER_SUCCESS_NO_MATCH';
 
 
         if (!id.hasOwnProperty('value')) {
-            console.log('elicit id value')
-            const idMissingOutput = 'Wie lautet die vierstellige ei die?';
+            console.log('elicit id value');
+            const idMissingOutput = 'Wie lautet die vierstellige Vorgangsnummer?';
             return input.responseBuilder
                 .speak(idMissingOutput)
                 .addElicitSlotDirective('id', request.intent)
                 .getResponse();
         }
-        else {
+        else if (!lastName.hasOwnProperty('value') || lastName.resolutions.resolutionsPerAuthority[0].status.code === noMatch)
+        {
+            console.log('elicit lastName value');
+            const lastNameMissingOutput = 'Wie lautet Ihr Nachname?';
+            return input.responseBuilder
+                .speak(lastNameMissingOutput)
+                .addElicitSlotDirective('lastName', request.intent)
+                .getResponse();
+        }
+        else
+        {
             const idInvalid = 'Ungültige Eingabe, wie lautet die vierstellige ei die?';
             var regEx = /^\d{4}$/;
             if (!id.value.match(regEx)) {
-                console.log('id vaule does not match /^\d{4}$/ --> ' + id);
+                console.log('id vaule does not match /^\d{4}$/ --> ' + id.value);
                 return input.responseBuilder
                     .speak(idInvalid)
                     .addElicitSlotDirective('id', request.intent)
                     .getResponse();
             }
-            else {
+            else
+            {
 
                 try {
+                    const idValue = id.value + '';
+                    console.log('type of id.value = ' + idValue + ': ' + typeof(idValue) + ' type of lastName.value = ' + lastName.value + ': ' + typeof(lastName.value));
+                    
                     var params =
                     {
                         TableName: reportTable,
                         Key:
                         {
-                            'id': id.value,
+                            'id': idValue,
+                            'name': lastName.value,
                         },
                     };
 
@@ -360,11 +377,11 @@ GetDataByIdHandler = {
                                 console.error('failed to read data' + JSON.stringify(err, null, 2));
                                 reject(input.responseBuilder
                                     .speak('Datenbanzugriff fehlgeschlagen')
-                                    .withShouldEndSession(false)
+                                    .withShouldEndSession(undefined)
                                     .getResponse());
                             }
                             else {
-                                console.log('successfully read data: ' + JSON.stringify(data, null, 2))
+                                console.log('successfully read data: ' + JSON.stringify(data, null, 2));
                                 const item = data.Item;
                                 var object = item.object;
                                 var location = item.location;
@@ -375,7 +392,7 @@ GetDataByIdHandler = {
                                     + object + ', hat den Bearbeitungsstatus ' + sop + '.';
                                 resolve(input.responseBuilder
                                     .speak(speechOutput)
-                                    .withShouldEndSession(false)
+                                    .withShouldEndSession(undefined)
                                     .getResponse());
                             }
                         })
@@ -460,14 +477,14 @@ const DeleteDataByIdHandler =
                             console.log("failed to delete item from database", JSON.stringify(err, null, 2));
                             reject(input.responseBuilder
                                 .speak('Beim Löschen der Meldung ist ein Fehler aufgetreten')
-                                .withShouldEndSession(false)
+                                .withShouldEndSession(undefined)
                                 .getResponse());
                         }
                         else {
                             console.log('successfully deleted ' + id + ' from database', JSON.stringify(data, null, 2));
                             resolve(input.responseBuilder
                                 .speak('Die Meldung wurde zum Löschen markiert. Sie werden informiert so bald die Meldung endgültig gelöscht wurde.')
-                                .withShouldEndSession(false)
+                                .withShouldEndSession(undefined)
                                 .getResponse());
                         }
                     })
