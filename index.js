@@ -497,7 +497,7 @@ const IntentInfoHandler =
             if (slots.intent.value == null) {
                 console.log('wait for user input regarding intent info')
                 return input.responseBuilder
-                    .addDelegateDirective(request.intent)
+                    .addElicitSlotDirective('info', request.intent)
                     .getResponse();
             }
             else {
