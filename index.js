@@ -237,8 +237,12 @@ const SetDataHandler =
             else {
                 //try&catch to make sure all errors while trying to save data to database are caught
                 try {
-                    var dateObj = new Date();
+                    const locationId = location.resolutions.resolutionsPerAuthority[0].values[0].id;
+                    const objectId = object.resolutions.resolutionsPerAuthority[0].values[0].id;
+                    const stateId = state.resolutions.resolutionsPerAuthority[0].values[0].id;
+                    const lastNameId = lastName.resolutions.resolutionsPerAuthority[0].values[0].id;
 
+                    var dateObj = new Date();
                     var year = dateObj.getFullYear();
                     var month = dateObj.getMonth();
                     var day = dateObj.getUTCDate();
@@ -252,7 +256,7 @@ const SetDataHandler =
                     //creating id and report date, still needs to be checked for daylight savings
                     //var id = minutes + '' + hours;   //year + '' + month + '' + day + '' + hours + '' + minutes + '' + seconds; 
                     var reportDate = day + '.' + month + '.' + year;
-                    var name = firstName + ' ' + lastName;
+                    //var name = firstName + ' ' + lastName;
 
                     //params for database call, currently only supporting last name
                     var params =
@@ -261,11 +265,11 @@ const SetDataHandler =
                         Item:
                         {
                             'id': id,
-                            'name': lastName.value,
+                            'name': lastName,
                             'date': reportDate,
-                            'location': location.value,
-                            'object': object.value,
-                            'state': state.value,
+                            'location': locationId,
+                            'object': objectId,
+                            'state': stateId,
                             'sop': 'Meldung aufgenommen' //sop = state of progress
                         }
                     };
