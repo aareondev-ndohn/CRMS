@@ -124,7 +124,7 @@ function checksum(numIn) {
     var sum = i + j;
     sum = sum + '';
 
-    if (parseInt(sum,10) > 9) {
+    if (parseInt(sum, 10) > 9) {
         sum = checksum(sum);
     }
 
@@ -144,6 +144,31 @@ const LaunchRequestHandler =
         return input.responseBuilder
             .speak(welcomeMessagelong)
             .withShouldEndSession(false)
+            .addDirective({
+                type: 'Alexa.Presentation.APL.RenderDocument',
+                version: '1.0',
+                document: require('./homepage.json'),
+                datasources: {
+                    "bodyTemplate6Data": {
+                        "type": "object",
+                        "properties": {
+                            "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                            "headerText": "Mieter-Portal | Willkommen",
+                            "primaryText": " ",
+                            "secondaryText": "Sie können eine Schadensmeldung aufgeben oder den Status einer Meldung abfragen.",
+                            "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                            "hintText": "Im Bad tropft der Wasserhahn"
+                        },
+                        "transformers": [
+                            {
+                                "inputPath": "hintText",
+                                "transformer": "textToHint"
+                            }
+                        ]
+
+                    }
+                }
+            })
             .getResponse();
     }
 }
@@ -291,6 +316,24 @@ const SetDataHandler =
                                 resolve(input.responseBuilder
                                     .speak('Die Meldung wurde mit der ID ' + id + ' aufgenommen')
                                     .withShouldEndSession(undefined)
+                                    .addDirective({
+                                        type: 'Alexa.Presentation.APL.RenderDocument',
+                                        version: '1.0',
+                                        document: require('./homepage.json'),
+                                        datasources: {
+                                            "bodyTemplate6Data": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                                                    "headerText": "Mieter-Portal | Schadensmeldung",
+                                                    "primaryText": " ",
+                                                    "secondaryText": 'Die Meldung wurde mit der Vorgangsnummer ' + id + ' aufgenommen!',
+                                                    "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                                                    "hintText": ""
+                                                },
+                                            }
+                                        }
+                                    })
                                     .getResponse());
                             }
                         })
@@ -334,8 +377,7 @@ GetDataByIdHandler = {
                 .addElicitSlotDirective('id', request.intent)
                 .getResponse();
         }
-        else if (!lastName.hasOwnProperty('value') || lastName.resolutions.resolutionsPerAuthority[0].status.code === noMatch)
-        {
+        else if (!lastName.hasOwnProperty('value') || lastName.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
             console.log('elicit lastName value');
             const lastNameMissingOutput = 'Wie lautet Ihr Nachname?';
             return input.responseBuilder
@@ -343,8 +385,7 @@ GetDataByIdHandler = {
                 .addElicitSlotDirective('lastName', request.intent)
                 .getResponse();
         }
-        else
-        {
+        else {
             const idInvalid = 'Ungültige Eingabe, wie lautet die vierstellige ei die?';
             var regEx = /^\d{4}$/;
             if (!id.value.match(regEx)) {
@@ -354,13 +395,12 @@ GetDataByIdHandler = {
                     .addElicitSlotDirective('id', request.intent)
                     .getResponse();
             }
-            else
-            {
+            else {
 
                 try {
                     const idValue = id.value + '';
-                    console.log('type of id.value = ' + idValue + ': ' + typeof(idValue) + ' type of lastName.value = ' + lastName.value + ': ' + typeof(lastName.value));
-                    
+                    console.log('type of id.value = ' + idValue + ': ' + typeof (idValue) + ' type of lastName.value = ' + lastName.value + ': ' + typeof (lastName.value));
+
                     var params =
                     {
                         TableName: reportTable,
@@ -393,6 +433,24 @@ GetDataByIdHandler = {
                                 resolve(input.responseBuilder
                                     .speak(speechOutput)
                                     .withShouldEndSession(undefined)
+                                    .addDirective({
+                                        type: 'Alexa.Presentation.APL.RenderDocument',
+                                        version: '1.0',
+                                        document: require('./homepage.json'),
+                                        datasources: {
+                                            "bodyTemplate6Data": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                                                    "headerText": "Mieter-Portal | Bearbeitungsstatus",
+                                                    "primaryText": " ",
+                                                    "secondaryText": 'Meldung ' + id.value + ' hat den Status: ' + sop,
+                                                    "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                                                    "hintText": ""
+                                                },
+                                            }
+                                        }
+                                    })
                                     .getResponse());
                             }
                         })
@@ -485,6 +543,24 @@ const DeleteDataByIdHandler =
                             resolve(input.responseBuilder
                                 .speak('Die Meldung wurde zum Löschen markiert. Sie werden informiert so bald die Meldung endgültig gelöscht wurde.')
                                 .withShouldEndSession(undefined)
+                                .addDirective({
+                                    type: 'Alexa.Presentation.APL.RenderDocument',
+                                    version: '1.0',
+                                    document: require('./homepage.json'),
+                                    datasources: {
+                                        "bodyTemplate6Data": {
+                                            "type": "object",
+                                            "properties": {
+                                                "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                                                "headerText": "Mieter-Portal | Meldung entfernen",
+                                                "primaryText": " ",
+                                                "secondaryText": 'Die Meldung ' + id.value + ' wurde zum Löschen markiert. Sie werden informiert so bald die Meldung endgültig gelöscht wurde.',
+                                                "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                                                "hintText": ""
+                                            },
+                                        }
+                                    }
+                                })
                                 .getResponse());
                         }
                     })
@@ -577,6 +653,24 @@ const MaintenancemanHandler = {
         return input.responseBuilder
             .speak("Ihr Hausmeister heißt Herr Krause und ist Wochentags von 9 bis 17 Uhr unter der Nummer 0 8 1 0 0 4 3 5 5 erreichbar")
             //.withsimpleCard(SKILL_NAME, "Der Hausmeister Heißt Herr Krause und ist Wochentags von 9 bis 17 Uhr unter der Nummer 08100 ereichbar")
+            .addDirective({
+                type: 'Alexa.Presentation.APL.RenderDocument',
+                version: '1.0',
+                document: require('./homepage.json'),
+                datasources: {
+                    "bodyTemplate6Data": {
+                        "type": "object",
+                        "properties": {
+                            "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                            "headerText": "Mieter-Portal | Hausmeister",
+                            "primaryText": " ",
+                            "secondaryText": 'Herr Krause, Tel. 081004355, Mo-Fr. 9-17 Uhr',
+                            "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                            "hintText": ""
+                        },
+                    }
+                }
+            })
             .getResponse();
     },
 };
@@ -592,6 +686,24 @@ const BinCollectionHandler = {
         return input.responseBuilder
             .speak("Der Müll wird jeden Donnerstag Vormittag abgeholt")
             //.withsimpleCard(SKILL_NAME, "Der Müll wird immer Donnerstags Vormittags abgeholt")
+            .addDirective({
+                type: 'Alexa.Presentation.APL.RenderDocument',
+                version: '1.0',
+                document: require('./homepage.json'),
+                datasources: {
+                    "bodyTemplate6Data": {
+                        "type": "object",
+                        "properties": {
+                            "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                            "headerText": "Mieter-Portal | Müllabholung",
+                            "primaryText": " ",
+                            "secondaryText": 'Der Müll wird jeden Donnerstag Vormittag abgeholt',
+                            "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                            "hintText": ""
+                        },
+                    }
+                }
+            })
             .getResponse();
     },
 };
@@ -607,6 +719,24 @@ const OfficalHandler = {
         return input.responseBuilder
             .speak("Der Name Ihres zuständigen Sachbearbeiters ist Herr Meier")
             //.withsimpleCard(SKILL_NAME, "Ihr zuständiger Sachbearbeiter heißt Herr Meier")
+            .addDirective({
+                type: 'Alexa.Presentation.APL.RenderDocument',
+                version: '1.0',
+                document: require('./homepage.json'),
+                datasources: {
+                    "bodyTemplate6Data": {
+                        "type": "object",
+                        "properties": {
+                            "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                            "headerText": "Mieter-Portal | Sachbearbeiter",
+                            "primaryText": " ",
+                            "secondaryText": 'Herr Meier',
+                            "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                            "hintText": ""
+                        },
+                    }
+                }
+            })
             .getResponse();
     },
 };
@@ -622,23 +752,60 @@ const ElectricitymeterHandler = {
         return input.responseBuilder
             .speak("Der Strom wird das nächste Mal am Montag den 17.12.2018 abgelesen")
             //.withsimpleCard(SKILL_NAME, "Der Strom wird in 2018 am Montag den 17.12. abgelesen")
+            .addDirective({
+                type: 'Alexa.Presentation.APL.RenderDocument',
+                version: '1.0',
+                document: require('./homepage.json'),
+                datasources: {
+                    "bodyTemplate6Data": {
+                        "type": "object",
+                        "properties": {
+                            "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                            "headerText": "Mieter-Portal | Strom ablesen",
+                            "primaryText": " ",
+                            "secondaryText": 'Der Strom wird am 17.12.2018 abgelesen',
+                            "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                            "hintText": ""
+                        },
+                    }
+                }
+            })
             .getResponse();
     },
 };
 
-const NewInformationHandler = {canHandle(handlerInput) {
-    const request = handlerInput.requestEnvelope.request;
-    return request.type === 'IntentRequest'
-        && request.intent.name === 'NewInformation';
-  },
-  handle(handlerInput) {
-   
- 
-    return handlerInput.responseBuilder
-      .speak("Es liegt aktuell eine Neue Information vor: nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten Außerbetrieb")
-      .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten Außerbetrieb")
-      .getResponse();
-  },
+const NewInformationHandler = {
+    canHandle(handlerInput) {
+        const request = handlerInput.requestEnvelope.request;
+        return request.type === 'IntentRequest'
+            && request.intent.name === 'NewInformation';
+    },
+    handle(handlerInput) {
+
+
+        return handlerInput.responseBuilder
+            .speak("Es liegt aktuell eine Neue Information vor: nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten Außerbetrieb")
+            .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten Außerbetrieb")
+            .addDirective({
+                type: 'Alexa.Presentation.APL.RenderDocument',
+                version: '1.0',
+                document: require('./homepage.json'),
+                datasources: {
+                    "bodyTemplate6Data": {
+                        "type": "object",
+                        "properties": {
+                            "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                            "headerText": "Mieter-Portal | Neue Informationen",
+                            "primaryText": " ",
+                            "secondaryText": '03.12.2018, 10-13 Uhr --> Wartungsarbeiten am Aufzug',
+                            "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                            "hintText": ""
+                        },
+                    }
+                }
+            })
+            .getResponse();
+    },
 };
 
 const HelpHandler = {
