@@ -112,6 +112,8 @@ function createId(dateObj) {
     }
 
     var createdId = day + '' + hours + '' + minutes;
+
+    console.log('created id : ' + createdId);
     return createdId;
 }
 
@@ -265,11 +267,11 @@ const SetDataHandler =
                         Item:
                         {
                             'id': id,
-                            'name': lastName,
+                            'name': lastName.value,
                             'date': reportDate,
-                            'location': locationId,
-                            'object': objectId,
-                            'state': stateId,
+                            'location': location.value,
+                            'object': object.value,
+                            'state': state.value,
                             'sop': 'Meldung aufgenommen' //sop = state of progress
                         }
                     };
@@ -288,7 +290,7 @@ const SetDataHandler =
                                 console.log('successfully added item to database', JSON.stringify(data, null, 2));
                                 resolve(input.responseBuilder
                                     .speak('Die Meldung wurde mit der ID ' + id + ' aufgenommen')
-                                    .withShouldEndSession(false)
+                                    .withShouldEndSession(undefined)
                                     .getResponse());
                             }
                         })
@@ -607,6 +609,21 @@ const ElectricitymeterHandler = {
     },
 };
 
+const NewInformationHandler = {canHandle(handlerInput) {
+    const request = handlerInput.requestEnvelope.request;
+    return request.type === 'IntentRequest'
+        && request.intent.name === 'NewInformation';
+  },
+  handle(handlerInput) {
+   
+ 
+    return handlerInput.responseBuilder
+      .speak("Es liegt aktuell eine Neue Information vor: nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten Außerbetrieb")
+      .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten Außerbetrieb")
+      .getResponse();
+  },
+};
+
 const HelpHandler = {
     canHandle(input) {
         const request = input.requestEnvelope.request;
@@ -673,6 +690,7 @@ exports.handler = skillBuilder
         ElectricitymeterHandler,
         MaintenancemanHandler,
         BinCollectionHandler,
+        NewInformationHandler,
         HelpHandler,
         ExitHandler,
         SessionEndedRequestHandler,
