@@ -30,6 +30,7 @@ const LaunchRequestHandler =
         const text2 = 'ich bin text2 fett pronomenbaby';
         const text3 = 'Tipp: "Schadensmeldung aufnehmen..."';
 
+/*
         if (supportsDisplay(handlerInput)) {
             const displayType = 'BodyTemplate7';
             const imageUrl = backgroundImageUrl;
@@ -44,9 +45,35 @@ const LaunchRequestHandler =
         else {
             response = handlerInput.responseBuilder;
         }
-
+*/
+        response = handlerInput.responseBuilder;
         return response
             .speak(welcomeMessage)
+            .addDirective({
+                type: 'Alexa.Presentation.APL.RenderDocument',
+                    version: '1.0',
+                    document: require('./homepage.json'),
+                    datasources: {
+                    "bodyTemplate6Data": {
+                        "type": "object",
+                        "properties":{
+                            "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg", 
+                            "headerText": "Mieter Portal",
+                            "primaryText": "Willkommen in ihrem Mieter Portal",
+                            "secondaryText": "Sie können eine Schadensmeldung aufgeben oder den status einer Meldung abfragen",
+                            "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                            "hintText": " im Bad tropft der Wasserhan\""
+                    },
+                "transformers": [
+                    {
+                        "inputPath": "hintText",
+                        "transformer": "textToHint"
+                    }
+                ]
+                 
+                    }
+                    }
+                })
             .withShouldEndSession(false)
             .getResponse();
 
