@@ -13,7 +13,7 @@ const bgImageUrl = '';
 
 const SKILL_NAME = 'Mieter-Portal';
 const HELP_REPROMPT = 'HelpRepromt';
-const HELP_MESSAGE = 'Um mehr über die Funktionen dieses Skills zu erfahren sagen Sie: Info zum Mieter-Portal';
+const HELP_MESSAGE = 'Um mehr über die Funktionen dieses Skills zu erfahren, sagen Sie: Info zum Mieter-Portal';
 const STOP_MESSAGE = 'Auf Wiedersehen';
 const skillBuilder = askSDK.SkillBuilders.standard();
 
@@ -155,7 +155,7 @@ const LaunchRequestHandler =
                             "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
                             "headerText": "Mieter-Portal | Willkommen",
                             "primaryText": " ",
-                            "secondaryText": "Sie können eine Schadensmeldung aufgeben oder den Status einer Meldung abfragen.",
+                            "secondaryText": "Sie können eine Schadensmeldung aufgeben oder den Status einer Meldung abfragen",
                             "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
                             "hintText": "Im Bad tropft der Wasserhahn"
                         },
@@ -314,12 +314,12 @@ const SetDataHandler =
                             else {
                                 console.log('successfully added item to database', JSON.stringify(data, null, 2));
                                 resolve(input.responseBuilder
-                                    .speak('Die Meldung wurde mit der ID ' + id + ' aufgenommen')
+                                    .speak('Die Meldung wurde mit der Vorgangsnummer ' + id + ' aufgenommen')
                                     .withShouldEndSession(undefined)
                                     .addDirective({
                                         type: 'Alexa.Presentation.APL.RenderDocument',
                                         version: '1.0',
-                                        document: require('./homepage.json'),
+                                        document: require('./openDamagereport.json'),
                                         datasources: {
                                             "bodyTemplate6Data": {
                                                 "type": "object",
@@ -327,7 +327,7 @@ const SetDataHandler =
                                                     "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
                                                     "headerText": "Mieter-Portal | Schadensmeldung",
                                                     "primaryText": " ",
-                                                    "secondaryText": 'Die Meldung wurde mit der Vorgangsnummer ' + id + ' aufgenommen!',
+                                                    "secondaryText": 'Die Meldung wurde mit der Vorgangsnummer '+ id + ' aufgenommen!',
                                                     "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
                                                     "hintText": ""
                                                 },
@@ -386,7 +386,7 @@ GetDataByIdHandler = {
                 .getResponse();
         }
         else {
-            const idInvalid = 'Ungültige Eingabe, wie lautet die vierstellige ei die?';
+            const idInvalid = 'Ungültige Eingabe, wie lautet die vierstellige Vorgangsnummer?';
             var regEx = /^\d{4}$/;
             if (!id.value.match(regEx)) {
                 console.log('id vaule does not match /^\d{4}$/ --> ' + id.value);
@@ -427,7 +427,7 @@ GetDataByIdHandler = {
                                 var location = item.location;
                                 var sop = item.sop;
                                 var date = item.date;
-                                var speechOutput = 'Ihre Schadensmeldung vom ' + date + ' mit der Id '
+                                var speechOutput = 'Ihre Schadensmeldung vom ' + date + ' mit der Vorgangsnummer '
                                     + id.value + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
                                     + object + ', hat den Bearbeitungsstatus ' + sop + '.';
                                 resolve(input.responseBuilder
@@ -444,7 +444,7 @@ GetDataByIdHandler = {
                                                     "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
                                                     "headerText": "Mieter-Portal | Bearbeitungsstatus",
                                                     "primaryText": " ",
-                                                    "secondaryText": 'Meldung ' + id.value + ' hat den Status: ' + sop,
+                                                    "secondaryText": 'Die Meldung ' + id.value + ' hat den Status: ' + sop,
                                                     "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
                                                     "hintText": ""
                                                 },
@@ -488,7 +488,7 @@ const DeleteDataByIdHandler =
         }
 
         else if (request.intent.confirmationStatus === 'NONE') {
-            const missingIdMsg = 'Wie lautet die vierstellige ei, die?'
+            const missingIdMsg = 'Wie lautet die vierstellige Vorgangsnummer?'
 
             if (!id.hasOwnProperty('value')) {
                 console.log('id value invalid --> elicit id slot');
@@ -499,7 +499,7 @@ const DeleteDataByIdHandler =
             }
             else {
                 var regEx = /^\d{4}$/;
-                const idInvalid = 'Ungültige Eingabe. Wie lautet die vierstellige ei, die?'
+                const idInvalid = 'Ungültige Eingabe. Wie lautet die vierstellige Vorgangsnummer?'
                 if (!id.value.match(regEx)) {
                     console.log('id vaule does not match regEx --> id: ' + id.value);
                     return input.responseBuilder
@@ -510,7 +510,7 @@ const DeleteDataByIdHandler =
                 else {
                     console.log('getting user confirmation');
                     var idOutput = idResponseOutput(id.value);
-                    const intentConfirmationMsg = 'Sind Sie sicher, dass Sie die Meldung mit der ei Die '
+                    const intentConfirmationMsg = 'Sind Sie sicher, dass Sie die Meldung mit der Vorgangsnummer '
                         + idOutput + ' löschen möchten?';
                     return input.responseBuilder
                         .speak(intentConfirmationMsg)
@@ -541,7 +541,7 @@ const DeleteDataByIdHandler =
                         else {
                             console.log('successfully deleted ' + id + ' from database', JSON.stringify(data, null, 2));
                             resolve(input.responseBuilder
-                                .speak('Die Meldung wurde zum Löschen markiert. Sie werden informiert so bald die Meldung endgültig gelöscht wurde.')
+                                .speak('Die Meldung wurde zum Löschen markiert. Sie werden informiert, so bald die Meldung endgültig gelöscht wurde.')
                                 .withShouldEndSession(undefined)
                                 .addDirective({
                                     type: 'Alexa.Presentation.APL.RenderDocument',
@@ -554,7 +554,7 @@ const DeleteDataByIdHandler =
                                                 "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
                                                 "headerText": "Mieter-Portal | Meldung entfernen",
                                                 "primaryText": " ",
-                                                "secondaryText": 'Die Meldung ' + id.value + ' wurde zum Löschen markiert. Sie werden informiert so bald die Meldung endgültig gelöscht wurde.',
+                                                "secondaryText": 'Die Meldung ' + id.value + ' wurde zum Löschen markiert. Sie werden informiert, wenn die Meldung endgültig gelöscht wurde.',
                                                 "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
                                                 "hintText": ""
                                             },
@@ -569,7 +569,7 @@ const DeleteDataByIdHandler =
             catch (err) {
                 console.error('caugth exception ' + err + ' failed to delete or access database');
                 return input.responseBuilder
-                    .speak('Beim Zugirff auf die Datenbank ist etwas schiefgelaufen')
+                    .speak('Beim Zugriff auf die Datenbank ist etwas schiefgelaufen')
                     .getResponse();
             }
         }
@@ -651,7 +651,7 @@ const MaintenancemanHandler = {
     handle(input) {
 
         return input.responseBuilder
-            .speak("Ihr Hausmeister heißt Herr Krause und ist Wochentags von 9 bis 17 Uhr unter der Nummer 0 8 1 0 0 4 3 5 5 erreichbar")
+            .speak("Ihr Hausmeister heißt Herr Krause und ist wochentags von 9 bis 17 Uhr unter der Nummer 0 8 1 0 0 4 3 5 5 erreichbar")
             //.withsimpleCard(SKILL_NAME, "Der Hausmeister Heißt Herr Krause und ist Wochentags von 9 bis 17 Uhr unter der Nummer 08100 ereichbar")
             .addDirective({
                 type: 'Alexa.Presentation.APL.RenderDocument',
@@ -784,8 +784,8 @@ const NewInformationHandler = {
 
 
         return handlerInput.responseBuilder
-            .speak("Es liegt aktuell eine Neue Information vor: nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten Außerbetrieb")
-            .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten Außerbetrieb")
+            .speak("Es liegt aktuell eine neue Information vor: nächste Woche Montag, den 03.12.2018, ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
+            .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
             .addDirective({
                 type: 'Alexa.Presentation.APL.RenderDocument',
                 version: '1.0',
