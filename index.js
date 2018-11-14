@@ -7,9 +7,8 @@ awsSDK.config.update(
 );
 
 
-const reportTable = 'AareonForum';
+const reportTable = 'AareonForumv2';
 const docClient = new awsSDK.DynamoDB.DocumentClient();
-const bgImageUrl = '';
 
 const SKILL_NAME = 'Mieter-Portal';
 const HELP_REPROMPT = 'Für Hilfe, sage: Info zum Mieter-Portal';
@@ -24,49 +23,6 @@ const getDataIntentInfo = 'Bearbeitungsstatus erfragen Info';
 const welcomeMessage = 'Willkommen im Mieterportal deines Wohnungsunternehmens';
 
 const WhatDoYouDoMessage = "Ich kann eine Schadensmeldung aufnehmen, den Status einer Meldung abfragen, nach wichtigen Informationen deines Vermieters fragen, wer dein Sachbearbeiter, dein Hausmeister ist, wann der Strom abgelesen oder der Müll abgeholt wird und eine Mietbescheinigung anfordern";
-
-
-function supportsDisplay(input) {
-    var hasDisplay =
-        input.requestEnvelope.context &&
-        input.requestEnvelope.context.System &&
-        input.requestEnvelope.context.System.device &&
-        input.requestEnvelope.context.System.device.supportedInterfaces &&
-        input.requestEnvelope.context.System.device.supportedInterfaces.Display
-    return hasDisplay;
-}
-
-function getDisplay(response, /*attributes,*/ imageUrl, displayType, title, text1, text2, text3) {
-    const image = new askSDK.ImageHelper().addImageInstance(imageUrl).getImage();
-
-    const textContent = new askSDK.RichTextContentHelper()
-        .withPrimaryText(text1)
-        .withSecondaryText(text2)
-        .withTertiaryText(text3)
-        .getTextContent();
-
-    if (displayType == 'BodyTemplate7') {
-        //use Background image
-        response.addRenderTemplateDirective({
-            type: displayType,
-            backButton: 'visible',
-            backgroundImage: image,
-            title: title,
-            textContent: textContent,
-        });
-    }
-    else {
-        response.addRenderTemplateDirective({
-            //use 340x340 image on the right with text on the left
-            backButton: 'visible',
-            image: image,
-            title: title,
-            textContent: textContent,
-        });
-    }
-    console.log('textContent is: ', JSON.stringify(textContent, null, 2));
-    return response;
-}
 
 function idResponseOutput(id) {
     var output = '';
@@ -85,52 +41,22 @@ function createId(dateObj) {
     var hours = dateObj.getHours();
     var minutes = dateObj.getMinutes();
     var seconds = dateObj.getSeconds();
+    hours = parseInt(hours, 10) + 1;
+    hours = hours + '';
 
     if (parseInt(minutes, 10) < 10) {
         minutes = '0' + minutes;
     }
 
-    if (day == '27') {
-        day = '1';
-    }
-    else if (day == '28') {
-        day = '3';
-    }
-    else if (day == '29') {
-        day = '5'
-    }
-    else {
-        day = checksum(day);
+    if (parseInt(hours, 10) < 10) {
+        hours = '0' + hours;
     }
 
-    if (parseInt(hours, 10) > 9) {
-        day = parseInt(day, 10) + 1;
-        if (parseInt(day, 10) > 9) {
-            day = checksum(day);
-        }
-        hours = checksum(hours);
-    }
-
-    var createdId = day + '' + hours + '' + minutes;
+    var createdId = hours + '' + minutes;
 
     console.log('created id : ' + createdId);
     return createdId;
 }
-
-function checksum(numIn) {
-    numIn = numIn + '';
-    var i = parseInt(numIn.charAt(0));
-    var j = parseInt(numIn.charAt(1));
-    var sum = i + j;
-    sum = sum + '';
-
-    if (parseInt(sum, 10) > 9) {
-        sum = checksum(sum);
-    }
-
-    return sum;
-}
-
 
 const LaunchRequestHandler =
 {
@@ -189,13 +115,9 @@ const SetDataHandler =
         const object = slots.object;
         const location = slots.location;
         const state = slots.state;
-        const firstName = slots.firstName;
-        const lastName = slots.lastName;
         const missigLocationMessage = 'Um welchen Ort geht es?';
         const missingObjectMessage = 'Um welchen Gegenstand handelt es sich?';
         const missingStateMessage = 'Wie ist der Zustand des Objekts?';
-        const elicitFirstNameMsg = 'Wie lautet Ihr Vorname?';
-        const elicitLastNameMsg = 'Wie lautet dein Nachname?';
         const noMatch = 'ER_SUCCESS_NO_MATCH';
         //if intent confirmation = denied, intent will end
         if (request.intent.confirmationStatus === 'DENIED') {
@@ -232,29 +154,12 @@ const SetDataHandler =
                         .addElicitSlotDirective('state', intent)
                         .getResponse();
                 }
-                //first name is currently taken directly form voice input so it can't be check against any data. therefore unusable for database
-                /*else if (!firstName.hasOwnProperty('value')){// || firstName.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
-                    console.log('elicit first name');
-                    return input.responseBuilder
-                        .speak(elicitFirstNameMsg)
-                        .addElicitSlotDirective('firstName')
-                        .getResponse();
-                }*/
-                //last name is checked against list, therefore applicable for database usage
-                else if (!lastName.hasOwnProperty('value') || lastName.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
-                    console.log('elicit last name');
-                    return input.responseBuilder
-                        .speak(elicitLastNameMsg)
-                        .addElicitSlotDirective('lastName', intent)
-                        .getResponse();
-                }
 
                 // intent confirmation requested, so next input-object's slot values aren't checked
                 console.log('getting intent confirmation');
                 var speechOutput = 'Möchtest du die Meldung mit den Daten: Ort '
                     + location.value + ', Objekt ' + object.value + ', Zustand '
-                    + state.value + ' unter dem Namen ' //+ firstName.value + ' '
-                    + lastName.value + ' aufgeben?';
+                    + state.value + 'aufgeben?'
                 return input.responseBuilder
                     .speak(speechOutput)
                     .addConfirmIntentDirective(intent)
@@ -267,7 +172,6 @@ const SetDataHandler =
                     const locationId = location.resolutions.resolutionsPerAuthority[0].values[0].id;
                     const objectId = object.resolutions.resolutionsPerAuthority[0].values[0].id;
                     const stateId = state.resolutions.resolutionsPerAuthority[0].values[0].id;
-                    const lastNameId = lastName.resolutions.resolutionsPerAuthority[0].values[0].id;
 
                     var dateObj = new Date();
                     var year = dateObj.getFullYear();
@@ -281,9 +185,8 @@ const SetDataHandler =
                     month = parseInt(month, 10) + 1;
 
                     //creating id and report date, still needs to be checked for daylight savings
-                    //var id = minutes + '' + hours;   //year + '' + month + '' + day + '' + hours + '' + minutes + '' + seconds; 
+                    //var id = hours + '' + minutes;   //year + '' + month + '' + day + '' + hours + '' + minutes + '' + seconds; 
                     var reportDate = day + '.' + month + '.' + year;
-                    //var name = firstName + ' ' + lastName;
 
                     //params for database call, currently only supporting last name
                     var params =
@@ -292,7 +195,6 @@ const SetDataHandler =
                         Item:
                         {
                             'id': id,
-                            'name': lastName.value,
                             'date': reportDate,
                             'location': location.value,
                             'object': object.value,
@@ -314,7 +216,7 @@ const SetDataHandler =
                             else {
                                 console.log('successfully added item to database', JSON.stringify(data, null, 2));
                                 resolve(input.responseBuilder
-                                    .speak('Die Meldung wurde mit der Vorgangsnummer ' + id + ' aufgenommen')
+                                    .speak('Die Meldung wurde mit der Vorgangsnummer ' + idResponseOutput(id) + ' aufgenommen')
                                     .withShouldEndSession(undefined)
                                     .addDirective({
                                         type: 'Alexa.Presentation.APL.RenderDocument',
@@ -327,7 +229,7 @@ const SetDataHandler =
                                                     "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
                                                     "headerText": "Mieter-Portal | Schadensmeldung",
                                                     "primaryText": " ",
-                                                    "secondaryText": 'Die Meldung wurde mit der Vorgangsnummer '+ id + ' aufgenommen!',
+                                                    "secondaryText": 'Die Meldung wurde mit der Vorgangsnummer ' + id + ' aufgenommen!',
                                                     "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
                                                     "hintText": ""
                                                 },
@@ -344,8 +246,8 @@ const SetDataHandler =
                 catch (err) {
                     console.log('caught exeption: failed to add item to database - ' + err);
                     return input.responseBuilder
-                        .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
-                        .withShouldEndSession(false)
+                        .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten caught')
+                        .withShouldEndSession(undefined)
                         .getResponse();
                 }
             }
@@ -365,7 +267,6 @@ GetDataByIdHandler = {
         const request = input.requestEnvelope.request;
         const slots = request.intent.slots;
         const id = slots.id;
-        const lastName = slots.lastName;
         const noMatch = 'ER_SUCCESS_NO_MATCH';
 
 
@@ -375,14 +276,6 @@ GetDataByIdHandler = {
             return input.responseBuilder
                 .speak(idMissingOutput)
                 .addElicitSlotDirective('id', request.intent)
-                .getResponse();
-        }
-        else if (!lastName.hasOwnProperty('value') || lastName.resolutions.resolutionsPerAuthority[0].status.code === noMatch) {
-            console.log('elicit lastName value');
-            const lastNameMissingOutput = 'Wie lautet dein Nachname?';
-            return input.responseBuilder
-                .speak(lastNameMissingOutput)
-                .addElicitSlotDirective('lastName', request.intent)
                 .getResponse();
         }
         else {
@@ -399,7 +292,7 @@ GetDataByIdHandler = {
 
                 try {
                     const idValue = id.value + '';
-                    console.log('type of id.value = ' + idValue + ': ' + typeof (idValue) + ' type of lastName.value = ' + lastName.value + ': ' + typeof (lastName.value));
+                    console.log('type of id.value = ' + idValue + ': ' + typeof (idValue));
 
                     var params =
                     {
@@ -407,7 +300,6 @@ GetDataByIdHandler = {
                         Key:
                         {
                             'id': idValue,
-                            'name': lastName.value,
                         },
                     };
 
@@ -422,36 +314,63 @@ GetDataByIdHandler = {
                             }
                             else {
                                 console.log('successfully read data: ' + JSON.stringify(data, null, 2));
-                                const item = data.Item;
-                                var object = item.object;
-                                var location = item.location;
-                                var sop = item.sop;
-                                var date = item.date;
-                                var speechOutput = 'Deine Schadensmeldung vom ' + date + ' mit der Vorgangsnummer '
-                                    + id.value + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
-                                    + object + ', hat den Bearbeitungsstatus ' + sop + '.';
-                                resolve(input.responseBuilder
-                                    .speak(speechOutput)
-                                    .withShouldEndSession(undefined)
-                                    .addDirective({
-                                        type: 'Alexa.Presentation.APL.RenderDocument',
-                                        version: '1.0',
-                                        document: require('./homepage.json'),
-                                        datasources: {
-                                            "bodyTemplate6Data": {
-                                                "type": "object",
-                                                "properties": {
-                                                    "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
-                                                    "headerText": "Mieter-Portal | Bearbeitungsstatus",
-                                                    "primaryText": " ",
-                                                    "secondaryText": 'Die Meldung ' + id.value + ' hat den Status: ' + sop,
-                                                    "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
-                                                    "hintText": ""
-                                                },
+                                if (!data.hasOwnProperty('Item')) {
+                                    console.error('id not contained in database => object empty');
+                                    resolve(input.responseBuilder
+                                        .speak('Keine Meldung unter der angegebenen Vorgangsnummer vorhanden.')
+                                        .withShouldEndSession()
+                                        .addDirective({
+                                            type: 'Alexa.Presentation.APL.RenderDocument',
+                                            version: '1.0',
+                                            document: require('./homepage.json'),
+                                            datasources: {
+                                                "bodyTemplate6Data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                                                        "headerText": "Mieter-Portal | Bearbeitungsstatus",
+                                                        "primaryText": " ",
+                                                        "secondaryText": 'Keine Meldung unter Vorgangsnummer ' + idValue + ' vorhanden',
+                                                        "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                                                        "hintText": ""
+                                                    },
+                                                }
                                             }
-                                        }
-                                    })
-                                    .getResponse());
+                                        })
+                                        .getResponse());
+                                }
+                                else {
+                                    const item = data.Item;
+                                    var object = item.object;
+                                    var location = item.location;
+                                    var sop = item.sop;
+                                    var date = item.date;
+                                    var speechOutput = 'Deine Schadensmeldung vom ' + date + ' mit der Vorgangsnummer '
+                                        + idResponseOutput(id.value) + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
+                                        + object + ', hat den Bearbeitungsstatus ' + sop + '.';
+                                    resolve(input.responseBuilder
+                                        .speak(speechOutput)
+                                        .withShouldEndSession(undefined)
+                                        .addDirective({
+                                            type: 'Alexa.Presentation.APL.RenderDocument',
+                                            version: '1.0',
+                                            document: require('./homepage.json'),
+                                            datasources: {
+                                                "bodyTemplate6Data": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                        "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
+                                                        "headerText": "Mieter-Portal | Bearbeitungsstatus",
+                                                        "primaryText": " ",
+                                                        "secondaryText": 'Die Meldung ' + id.value + ' hat den Status: ' + sop,
+                                                        "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
+                                                        "hintText": ""
+                                                    },
+                                                }
+                                            }
+                                        })
+                                        .getResponse());
+                                }
                             }
                         })
                     });
@@ -653,6 +572,7 @@ const MaintenancemanHandler = {
         return input.responseBuilder
             .speak("Dein Hausmeister heißt Herr Krause und ist wochentags von 9 bis 17 Uhr unter der Nummer 0, 8, 1, 0, 0, 4, 3, 5, 5, erreichbar")
             //.withsimpleCard(SKILL_NAME, "Der Hausmeister Heißt Herr Krause und ist Wochentags von 9 bis 17 Uhr unter der Nummer 08100 ereichbar")
+            .withShouldEndSession(undefined)
             .addDirective({
                 type: 'Alexa.Presentation.APL.RenderDocument',
                 version: '1.0',
@@ -686,6 +606,7 @@ const BinCollectionHandler = {
         return input.responseBuilder
             .speak("Der Müll wird jeden Donnerstag Vormittag abgeholt")
             //.withsimpleCard(SKILL_NAME, "Der Müll wird immer Donnerstags Vormittags abgeholt")
+            .withShouldEndSession(undefined)
             .addDirective({
                 type: 'Alexa.Presentation.APL.RenderDocument',
                 version: '1.0',
@@ -719,6 +640,7 @@ const OfficalHandler = {
         return input.responseBuilder
             .speak(`Der Name deines zuständigen Sachbearbeiters ist Herr Meier, er ist unter der Nummer 0, 8, 1, 0, 0, 4, 3, 6, 0, erreichbar`)
             //.withsimpleCard(SKILL_NAME, "Ihr zuständiger Sachbearbeiter heißt Herr Meier")
+            .withShouldEndSession(undefined)
             .addDirective({
                 type: 'Alexa.Presentation.APL.RenderDocument',
                 version: '1.0',
@@ -752,6 +674,7 @@ const ElectricitymeterHandler = {
         return input.responseBuilder
             .speak("Der Strom wird das nächste Mal am Montag den 17.12.2018 abgelesen")
             //.withsimpleCard(SKILL_NAME, "Der Strom wird in 2018 am Montag den 17.12. abgelesen")
+            .withShouldEndSession(undefined)
             .addDirective({
                 type: 'Alexa.Presentation.APL.RenderDocument',
                 version: '1.0',
@@ -786,6 +709,7 @@ const NewInformationHandler = {
         return handlerInput.responseBuilder
             .speak("Es liegt aktuell eine neue Information vor: nächste Woche Montag, den 03.12.2018, ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
             .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
+            .withShouldEndSession(undefined)
             .addDirective({
                 type: 'Alexa.Presentation.APL.RenderDocument',
                 version: '1.0',
@@ -808,7 +732,7 @@ const NewInformationHandler = {
     },
 };
 
-const TenancyAgreementHandler  = {
+/*const TenancyAgreementHandler  = {
     canHandle(input) {
         const request = input.requestEnvelope.request;
         return request.type === 'IntentRequest'
@@ -870,7 +794,7 @@ const WhatDoYouDoHandler  = {
             })
             .getResponse();
     },
-};
+};*/
 
 const HelpHandler = {
     canHandle(input) {
@@ -942,8 +866,8 @@ exports.handler = skillBuilder
         HelpHandler,
         ExitHandler,
         SessionEndedRequestHandler,
-        TenancyAgreementHandler,
-        WhatDoYouDoHandler,
+        //TenancyAgreementHandler,
+        //WhatDoYouDoHandler,
     )
     .addErrorHandlers(ErrorHandler)
     .lambda();
