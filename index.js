@@ -488,7 +488,7 @@ const DeleteDataByIdHandler =
         }
 
         else if (request.intent.confirmationStatus === 'NONE') {
-            const missingIdMsg = 'Wie lautet die vierstellige Vorgangsnummer?'
+            const missingIdMsg = 'Wie lautet die vierstellige Vorgangsnummer?';
 
             if (!id.hasOwnProperty('value')) {
                 console.log('id value invalid --> elicit id slot');
@@ -499,7 +499,7 @@ const DeleteDataByIdHandler =
             }
             else {
                 var regEx = /^\d{4}$/;
-                const idInvalid = 'Ungültige Eingabe. Wie lautet die vierstellige Vorgangsnummer?'
+                const idInvalid = 'Ungültige Eingabe. Wie lautet die vierstellige Vorgangsnummer?';
                 if (!id.value.match(regEx)) {
                     console.log('id vaule does not match regEx --> id: ' + id.value);
                     return input.responseBuilder
@@ -526,7 +526,7 @@ const DeleteDataByIdHandler =
                     TableName: reportTable,
                     Key:
                     {
-                        'id': id.value
+                        'id': id.value,
                     }
                 }
                 return new Promise((resolve, reject) => {
