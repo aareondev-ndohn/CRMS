@@ -186,25 +186,16 @@
                                 "type": "Text",
                                 "text": "${payload.bodyTemplate6Data.properties.secondaryText}",
                                 "style": "textStyleDisplay8",
+                                "fontWeight": "@fontWeightBold",
                                 "fontSize": "@fontSizeMedium",
                                 "width": 1200,
-                                "height": 300,
+                                "height": 500,
                                 "top": 100,
                                 "align": "${viewport.shape == 'round' ? 'center' : 'left'}",
                                 "position": "absolute",
                                 "colorText": "211f20"
                             }
                         ]
-                    },
-                    {
-                        "type": "Text",
-                        "text": "${payload.bodyTemplate6Data.properties.hintText}",
-                        "height": 350,
-                        "fontFamily": "Bookerly",
-                        "fontSize": "@fontSizeSmall",
-                        "fontStyle": "italic",
-                        "position": "center",
-                        "textAlign": "center"
                     }
                 ]
             }
