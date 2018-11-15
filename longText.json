@@ -151,7 +151,7 @@
                                 "fontSize": "@fontSizeRegular",
                                 "position": "center",
                                 "width": 1000,
-                                "height": 200
+                                "height": 150
                             },
                             {
                                 "type": "AlexaHeader",
@@ -177,7 +177,7 @@
                                 "fontSize": "@fontSizeMedium",
                                 "width": 1200,
                                 "height": 500,
-                                "top": 100,
+                                "top": 10,
                                 "align": "${viewport.shape == 'round' ? 'center' : 'left'}",
                                 "position": "absolute",
                                 "colorText": "211f20"

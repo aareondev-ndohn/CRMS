@@ -22,7 +22,7 @@ const getDataIntentInfo = 'Bearbeitungsstatus erfragen Info';
 
 const welcomeMessage = 'Willkommen im Mieterportal deiner Wohnbau';
 
-const WhatDoYouDoMessage = "Ich kann eine Schadensmeldung aufgebenmen, den Status einer Meldung abfragen, nach wichtigen Informationen deines Vermieters fragen, wer dein Sachbearbeiter, dein Hausmeister ist, wann der Strom abgelesen oder der Müll abgeholt wird und eine Mietbescheinigung anfordern";
+const WhatDoYouDoMessage = 'Du kannst eine Schadensmeldung aufgeben, den Status einer Meldung abfragen, nach wichtigen Informationen deines Vermieters fragen, dich über deinen Sachbearbeiter <break time=\"0.2s\" /> deinen Hausmeister informieren, wann der Strom abgelesen <break time=\"0.2s\" /> oder der Müll abgeholt wird, und eine Mietbescheinigung anfordern';
 
 
 function createDisplayJSON(header, secondaryText, hintTextVar, isLaunchrequest,longText) {
