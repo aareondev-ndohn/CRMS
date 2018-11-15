@@ -449,38 +449,41 @@ const DeleteDataByIdHandler =
                     }
                 }
                 return new Promise((resolve, reject) => {
-                    docClient.delete(params, function (err, data) {
+                    docClient.get(params, function (err, data) {
                         if (err) {
-                            console.log("failed to delete item from database", JSON.stringify(err, null, 2));
+                            console.error('failed to read data' + JSON.stringify(err, null, 2));
                             reject(input.responseBuilder
-                                .speak('Beim Löschen der Meldung ist ein Fehler aufgetreten')
+                                .speak('Datenbanzugriff fehlgeschlagen')
                                 .withShouldEndSession(undefined)
                                 .getResponse());
                         }
                         else {
-                            console.log('successfully deleted ' + id + ' from database', JSON.stringify(data, null, 2));
-                            resolve(input.responseBuilder
-                                .speak('Die Meldung wurde zum Löschen markiert. Du wirst informiert, so bald die Meldung endgültig gelöscht wurde.')
-                                .withShouldEndSession(undefined)
-                                .addDirective({
-                                    type: 'Alexa.Presentation.APL.RenderDocument',
-                                    version: '1.0',
-                                    document: require('./homepage.json'),
-                                    datasources: {
-                                        "bodyTemplate6Data": {
-                                            "type": "object",
-                                            "properties": {
-                                                "backroundUrl": "https://s3.amazonaws.com/alexabackround/Aareon_Hauptsitz2.jpg",
-                                                "headerText": "Mieter-Portal | Meldung entfernen",
-                                                "primaryText": " ",
-                                                "secondaryText": 'Die Meldung ' + id.value + ' wurde zum Löschen markiert. Du wirst informiert, wenn die Meldung endgültig gelöscht wurde.',
-                                                "logoUrl": "https://s3.amazonaws.com/alexabackround/Alexa_aareon_logo_icon_.png",
-                                                "hintText": ""
-                                            },
-                                        }
+                            console.log('successfully read data: ' + JSON.stringify(data, null, 2));
+                            if (!data.hasOwnProperty('Item')) {
+                                console.error('id not contained in database => object empty');
+                                resolve(input.responseBuilder
+                                    .speak('Keine Meldung unter der angegebenen Vorgangsnummer vorhanden.')
+                                    .withShouldEndSession()
+                                    .getResponse());
+                            }
+                            else {
+                                docClient.delete(params, function (err, data) {
+                                    if (err) {
+                                        console.log("failed to delete item from database", JSON.stringify(err, null, 2));
+                                        reject(input.responseBuilder
+                                            .speak('Beim Löschen der Meldung ist ein Fehler aufgetreten')
+                                            .withShouldEndSession(undefined)
+                                            .getResponse());
+                                    }
+                                    else {
+                                        console.log('successfully deleted ' + id + ' from database', JSON.stringify(data, null, 2));
+                                        resolve(input.responseBuilder
+                                            .speak('Die Meldung wurde zum Löschen markiert. Du wirst informiert, so bald die Meldung endgültig gelöscht wurde.')
+                                            .withShouldEndSession(undefined)
+                                            .getResponse());
                                     }
                                 })
-                                .getResponse());
+                            }
                         }
                     })
                 })
