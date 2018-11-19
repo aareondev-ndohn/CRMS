@@ -59,6 +59,10 @@ function createDisplayJSON(header, secondaryText, hintTextVar, isLaunchrequest,l
     return out;
 }
 
+function firstCharUpperCase(string) 
+{
+    return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
 function idResponseOutput(id) {
     var output = '';
@@ -142,7 +146,7 @@ const SetDataHandler =
             console.log('user cancelled "SaveReport"-intent with current slot values')
             return input.responseBuilder
                 .speak('Meldung wurde verworfen')
-                .withShouldEndSession(undefined)
+                .withShouldEndSession(false)
                 .getResponse();
         }
         else {
@@ -231,7 +235,7 @@ const SetDataHandler =
 
                                 reject(input.responseBuilder
                                     .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten')
-                                    .withShouldEndSession(undefined)
+                                    .withShouldEndSession(false)
                                     .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
                                     .getResponse());
                             }
@@ -242,7 +246,7 @@ const SetDataHandler =
 
                                 resolve(input.responseBuilder
                                     .speak('Deine Meldung hat die Vorgangsnummer: ' + idResponseOutput(id))
-                                    .withShouldEndSession(undefined)
+                                    .withShouldEndSession(false)
                                     .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
                                     .getResponse());
                             }
@@ -258,7 +262,7 @@ const SetDataHandler =
 
                     return input.responseBuilder
                         .speak('Beim Aufnehmen der Meldung ist ein Fehler aufgetreten caught')
-                        .withShouldEndSession(undefined)
+                        .withShouldEndSession(false)
                         .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
                         .getResponse();
                 }
@@ -326,7 +330,7 @@ GetDataByIdHandler = {
 
                                 reject(input.responseBuilder
                                     .speak('Datenbanzugriff fehlgeschlagen')
-                                    .withShouldEndSession(undefined)
+                                    .withShouldEndSession(false)
                                     .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
                                     .getResponse());
                             }
@@ -335,11 +339,11 @@ GetDataByIdHandler = {
                                 if (!data.hasOwnProperty('Item')) {
                                     console.error('id not contained in database => object empty');
 
-                                    const secondaryText = 'Keine Meldung ' + id.value + ' vorhanden';
+                                    const secondaryText = 'Keine Meldung unter der Vorgangsnummer ' + id.value + ' vorhanden';
 
                                     resolve(input.responseBuilder
                                         .speak('Keine Meldung unter der angegebenen Vorgangsnummer vorhanden.')
-                                        .withShouldEndSession()
+                                        .withShouldEndSession(false)
                                         .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
                                         .getResponse());
                                 }
@@ -354,11 +358,11 @@ GetDataByIdHandler = {
                                         + idResponseOutput(id.value) + ' bezüglich des Ortes ' + location + ' und dem Gegenstand '
                                         + object + ', hat den Bearbeitungsstatus ' + sop + '.';
 
-                                    const secondaryText = 'Meldung: ' + id.value + '<br/>Ort: ' + location + '<br/>Objekt: '
-                                        + object + '<br/>Zustand: ' + state + '<br/>Bearbeitungsstatus: ' + sop;
+                                    const secondaryText = 'Meldung: ' + id.value + '<br/>Ort: ' + firstCharUpperCase(location) + '<br/>Objekt: '
+                                        + firstCharUpperCase(object) + '<br/>Zustand: ' + state + '<br/>Bearbeitungsstatus: ' + sop;
                                     resolve(input.responseBuilder
                                         .speak(speechOutput)
-                                        .withShouldEndSession(undefined)
+                                        .withShouldEndSession(false)
                                         .addDirective(createDisplayJSON(header, secondaryText, '', false,true))
                                         .getResponse());
                                 }
@@ -454,7 +458,7 @@ const DeleteDataByIdHandler =
 
                             reject(input.responseBuilder
                                 .speak('Datenbanzugriff fehlgeschlagen')
-                                .withShouldEndSession(undefined)
+                                .withShouldEndSession(false)
                                 .addDirective(createDisplayJSON(header, secondaryText, hintTextVar))
                                 .getResponse());
                         }
@@ -467,7 +471,7 @@ const DeleteDataByIdHandler =
                                 console.error('id not contained in database => object empty');
                                 resolve(input.responseBuilder
                                     .speak('Es ist keine Meldung unter der angegebenen Vorgangsnummer vorhanden.')
-                                    .withShouldEndSession()
+                                    .withShouldEndSession(false)
                                     .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
                                     .getResponse());
                             }
@@ -480,7 +484,7 @@ const DeleteDataByIdHandler =
 
                                         reject(input.responseBuilder
                                             .speak('Beim Löschen der Meldung ist ein Fehler aufgetreten')
-                                            .withShouldEndSession(undefined)
+                                            .withShouldEndSession(false)
                                             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
                                             .getResponse());
                                     }
@@ -491,7 +495,7 @@ const DeleteDataByIdHandler =
 
                                         resolve(input.responseBuilder
                                             .speak('Die Meldung wurde zum Löschen markiert. Du wirst informiert, so bald die Meldung endgültig gelöscht wurde.')
-                                            .withShouldEndSession(undefined)
+                                            .withShouldEndSession(false)
                                             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
                                             .getResponse());
                                     }
@@ -595,7 +599,7 @@ const MaintenancemanHandler = {
         return input.responseBuilder
             .speak("Dein Hausmeister heißt Herr Krause und ist wochentags von 9 bis 17 Uhr unter der Nummer 0, 8, 1, 0, 0, 4, 3, 5, 5, erreichbar")
             //.withsimpleCard(SKILL_NAME, "Der Hausmeister Heißt Herr Krause und ist Wochentags von 9 bis 17 Uhr unter der Nummer 08100 ereichbar")
-            .withShouldEndSession(undefined)
+            .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
             .getResponse();
     },
@@ -614,7 +618,7 @@ const BinCollectionHandler = {
         return input.responseBuilder
             .speak("Der Müll wird jeden Donnerstag Vormittag abgeholt")
             //.withsimpleCard(SKILL_NAME, "Der Müll wird immer Donnerstags Vormittags abgeholt")
-            .withShouldEndSession(undefined)
+            .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
             .getResponse();
     },
@@ -633,7 +637,7 @@ const OfficalHandler = {
         return input.responseBuilder
             .speak(`Der Name deines zuständigen Sachbearbeiters ist Herr Meier, er ist unter der Nummer 0, 8, 1, 0, 0, 4, 3, 6, 0, erreichbar`)
             //.withsimpleCard(SKILL_NAME, "Ihr zuständiger Sachbearbeiter heißt Herr Meier")
-            .withShouldEndSession(undefined)
+            .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
             .getResponse();
     },
@@ -652,7 +656,7 @@ const ElectricitymeterHandler = {
         return input.responseBuilder
             .speak("Der Strom wird das nächste Mal am Montag den 17.12.2018 abgelesen")
             //.withsimpleCard(SKILL_NAME, "Der Strom wird in 2018 am Montag den 17.12. abgelesen")
-            .withShouldEndSession(undefined)
+            .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
             .getResponse();
     },
@@ -671,7 +675,7 @@ const NewInformationHandler = {
         return handlerInput.responseBuilder
             .speak("Es liegt aktuell eine neue Information vor: nächste Woche Montag, den 03.12.2018, ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
             .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
-            .withShouldEndSession(undefined)
+            .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
             .getResponse();
     },
@@ -689,6 +693,7 @@ const TenancyAgreementHandler = {
 
         return input.responseBuilder
             .speak("Deine Mietbescheinigung wird erstellt und ist in wenigen Minuten in der Post Box im Wohnbau Mieter Portal verfügbar")
+            .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
             .getResponse();
     },
@@ -708,6 +713,7 @@ const WhatDoYouDoHandler = {
 
         return input.responseBuilder
             .speak(WhatDoYouDoMessage)
+            .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,true))
             .getResponse();
     },
