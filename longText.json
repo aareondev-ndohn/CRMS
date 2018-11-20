@@ -179,8 +179,7 @@
                                 "height": 500,
                                 "top": 10,
                                 "align": "${viewport.shape == 'round' ? 'center' : 'left'}",
-                                "position": "absolute",
-                                "colorText": "211f20"
+                                "position": "absolute"
                             }
                         ]
                     }

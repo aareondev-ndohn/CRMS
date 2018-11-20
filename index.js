@@ -707,7 +707,7 @@ const WhatDoYouDoHandler = {
     },
     handle(input) {
         const header = 'Funktionen';
-        const secondaryText = 'Schadensmeldung aufnehmen, Status abfragen, '
+        const secondaryText = 'Schadensmeldung aufgeben, Status abfragen, '
             + 'Sachbearbeiter/Hausmeister erfragen, Ablesetermin des Stroms erfragen, '
             + 'Neue Informationen des Vermieters, Mülllehrungsdatum, Mietbescheinigung anfordern';
 

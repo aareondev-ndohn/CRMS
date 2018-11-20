@@ -178,7 +178,7 @@
                                 "top": "1vh",
                                 "align": "${viewport.shape == 'round' ? 'center' : 'left'}",
                                 "position": "absolute",
-                                "colorText": "211f20"
+                                "colorText": "ffffff"
                             },
                             {
                                 "paddingLeft": "@marginLeft",
@@ -193,7 +193,7 @@
                                 "top": 100,
                                 "align": "${viewport.shape == 'round' ? 'center' : 'left'}",
                                 "position": "absolute",
-                                "colorText": "211f20"
+                                "colorText": "ffffff"
                             }
                         ]
                     }
