@@ -181,7 +181,7 @@ const SetDataHandler =
                 console.log('getting intent confirmation');
                 var speechOutput = 'Möchtest du die Meldung mit den Daten: Ort '
                     + location.value + ', Objekt ' + object.value + ', Zustand '
-                    + state.value + 'aufgeben?'
+                    + state.value + ' aufgeben?'
                 return input.responseBuilder
                     .speak(speechOutput)
                     .addConfirmIntentDirective(intent)
@@ -651,10 +651,10 @@ const ElectricitymeterHandler = {
     },
     handle(input) {
         const header = 'Strom ablesen';
-        const secondaryText = 'Der Strom wird am 17.12.2018 abgelesen';
+        const secondaryText = 'Der Strom wird am 05.04.2019 abgelesen';
 
         return input.responseBuilder
-            .speak("Der Strom wird das nächste Mal am Montag den 17.12.2018 abgelesen")
+            .speak("Der Strom wird das nächste Mal am Freitag den 05.04.2019 abgelesen")
             //.withsimpleCard(SKILL_NAME, "Der Strom wird in 2018 am Montag den 17.12. abgelesen")
             .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
@@ -670,11 +670,11 @@ const NewInformationHandler = {
     },
     handle(handlerInput) {
         const header = 'Neue Informationen';
-        const secondaryText = '03.12.2018, 10-13 Uhr, Wartungsarbeiten am Aufzug';
+        const secondaryText = '18.03.2019, 10-13 Uhr, Wartungsarbeiten am Aufzug';
 
         return handlerInput.responseBuilder
-            .speak("Es liegt aktuell eine neue Information vor: nächste Woche Montag, den 03.12.2018, ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
-            .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 03.12.2018 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
+            .speak("Es liegt aktuell eine neue Information vor: am Montag, den 18.03.2019, ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
+            .withSimpleCard("Mieter Portal", "Nächste Woche Montag, den 18.03.2019 ist der Aufzug von 10 bis 13 Uhr wegen Wartungsarbeiten außer Betrieb")
             .withShouldEndSession(false)
             .addDirective(createDisplayJSON(header, secondaryText, '', false,false))
             .getResponse();
