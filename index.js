@@ -594,7 +594,7 @@ const MaintenancemanHandler = {
     },
     handle(input) {
         const header = 'Hausmeister';
-        const secondaryText = 'Herr Krause, Tel. 081004355<br/>Mon.-Fr. 9-17 Uhr';
+        const secondaryText = 'Herr Krause, Tel. 081004355<br/>Mo.-Fr. 9-17 Uhr';
 
         return input.responseBuilder
             .speak("Dein Hausmeister heißt Herr Krause und ist wochentags von 9 bis 17 Uhr unter der Nummer 0, 8, 1, 0, 0, 4, 3, 5, 5, erreichbar")
